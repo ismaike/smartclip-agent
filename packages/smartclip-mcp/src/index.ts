@@ -31,7 +31,7 @@ async function startServer() {
 
   const server = new McpServer({
     name: 'smartclip',
-    version: '0.3.0',
+    version: '0.6.0',
   })
 
   server.tool('list_tabs', listTabsDescription, listTabsSchema, async () => {

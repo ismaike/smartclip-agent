@@ -1,12 +1,12 @@
 {
   "name": "smartclip-mcp",
   "type": "module",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "MCP Server for SmartClip Chrome Extension - enables AI agents to clip web pages",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicepkg/smartclip",
+    "url": "https://github.com/ismaike/smartclip-agent",
     "directory": "smartclip-agent/packages/smartclip-mcp"
   },
   "keywords": [

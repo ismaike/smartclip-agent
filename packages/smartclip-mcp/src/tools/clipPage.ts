@@ -6,7 +6,7 @@ export const clipPageSchema = {
   url: z.string().url().optional().describe('要剪藏的网页 URL。如果提供，插件将自动打开该页面并等待加载完成后进行剪藏。'),
   destination: z.enum(['obsidian', 'notion', 'markdown', 'flomo', 'siyuan', 'joplin', 'feishu'])
     .optional()
-    .describe('保存目标平台。如果未提供，则仅提取并返回页面内容的 Markdown，不保存到任何笔记软件。'),
+    .describe('⚠️ 警告：除非用户明确要求“存到笔记/保存到平台”，否则严禁使用此参数。如果不提供，则进入“极速分析模式”，仅返回 Markdown 内容而不触发任何保存或下载。'),
   mode: z.enum(['full', 'selection']).default('full').describe('提取模式：full 提取整个页面，selection 仅提取选中内容'),
 }
 

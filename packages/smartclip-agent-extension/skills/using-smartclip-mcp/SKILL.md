@@ -27,17 +27,24 @@ SmartClip MCP bridges the AI agent and the user's Chrome browser. It allows you 
 
 ## Core Workflows
 
+### ⚡️ STRICT RULE: The "One-Step" Principle
+To minimize latency and prevent polluting user notes, follow these rules:
+1. **NEVER** use `extract_page` followed by `convert_to_markdown`. These are low-level tools. 
+2. **ALWAYS** use `clip_page` for reading, summarizing, or analyzing any webpage. It handles extraction and conversion in a single, optimized step.
+3. **DO NOT** pass the `destination` parameter unless the user explicitly said "save this", "clip this to Notion", etc. 
+4. If you just need the content to answer a question, call `clip_page` with **NO destination**.
+
 ### 1. Reading / Information Gathering (No Saving)
 When the user just wants you to *read* a page to answer a question or summarize it:
 ```javascript
-// Good: Reads the page and returns Markdown to you. Note the ABSENCE of destination.
+// BEST PRACTICE: One call, no saving, returns full Markdown.
 clip_page({ url: 'https://github.com/org/repo/pull/1' })
 ```
 
 ### 2. Clipping / Saving to Notebook
 When the user explicitly asks to save a page to their notebook:
 ```javascript
-// Good: Extracts the active tab and saves it to Obsidian.
+// Only use destination when requested.
 clip_page({ destination: 'obsidian' })
 ```
 
