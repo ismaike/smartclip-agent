@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { NativeMessagingBridge } from '../bridge/nativeMessaging.js'
+import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const getTasksSchema = {
   status: z.enum(['queued', 'running', 'succeeded', 'failed', 'cancelled']).optional()
@@ -8,7 +8,7 @@ export const getTasksSchema = {
 
 export const getTasksDescription = '查看剪藏任务队列的状态。可以查看所有任务或按状态过滤（queued/running/succeeded/failed/cancelled）。'
 
-export async function getTasks(bridge: NativeMessagingBridge, args: { status?: string }) {
+export async function getTasks(bridge: WebSocketBridge, args: { status?: string }) {
   const response = await bridge.send('get-tasks', { status: args.status })
 
   if (!response.success) {

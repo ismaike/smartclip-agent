@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { NativeMessagingBridge } from '../bridge/nativeMessaging.js'
+import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const extractPageSchema = {
   tabId: z.number().describe('目标标签页 ID（通过 list_tabs 获取）。如不提供，将使用当前活动标签页。').optional(),
@@ -8,7 +8,7 @@ export const extractPageSchema = {
 
 export const extractPageDescription = '提取指定标签页的网页内容（HTML 和元数据）。返回页面标题、URL、正文 HTML、摘要等信息。这是剪藏流程的第一步。'
 
-export async function extractPage(bridge: NativeMessagingBridge, args: { tabId?: number, mode: string }) {
+export async function extractPage(bridge: WebSocketBridge, args: { tabId?: number, mode: string }) {
   const data: any = { mode: args.mode }
 
   if (args.tabId) {

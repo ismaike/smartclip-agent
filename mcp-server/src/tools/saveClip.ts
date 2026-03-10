@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { NativeMessagingBridge } from '../bridge/nativeMessaging.js'
+import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const saveClipSchema = {
   url: z.string().describe('页面 URL'),
@@ -15,7 +15,7 @@ export const saveClipSchema = {
 
 export const saveClipDescription = '将剪藏内容保存到指定的笔记平台（Notion、Obsidian、Flomo、Joplin、思源笔记、飞书等）。需要提供内容和目标平台。'
 
-export async function saveClip(bridge: NativeMessagingBridge, args: {
+export async function saveClip(bridge: WebSocketBridge, args: {
   url: string
   title?: string
   contentHtml?: string

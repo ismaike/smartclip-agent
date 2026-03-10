@@ -30,7 +30,7 @@ function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
     && 'code' in error
 }
 
-export class NativeMessagingBridge {
+export class WebSocketBridge {
   private wss: WebSocketServer | null = null
   private extensionSocket: WebSocket | null = null
   private pendingRequests = new Map<string, PendingRequest>()

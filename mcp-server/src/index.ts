@@ -19,7 +19,7 @@ startServer().catch((error) => {
 async function startServer() {
   const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js')
   const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js')
-  const { NativeMessagingBridge } = await import('./bridge/nativeMessaging.js')
+  const { WebSocketBridge } = await import('./bridge/websocketBridge.js')
   const { listTabsSchema, listTabsDescription, listTabs } = await import('./tools/listTabs.js')
   const { extractPageSchema, extractPageDescription, extractPage } = await import('./tools/extractPage.js')
   const { convertToMarkdownSchema, convertToMarkdownDescription, convertToMarkdown } = await import('./tools/convertToMarkdown.js')
@@ -27,7 +27,7 @@ async function startServer() {
   const { getTasksSchema, getTasksDescription, getTasks } = await import('./tools/getTasks.js')
   const { clipPageSchema, clipPageDescription, clipPage } = await import('./tools/clipPage.js')
 
-  const bridge = new NativeMessagingBridge()
+  const bridge = new WebSocketBridge()
 
   const server = new McpServer({
     name: 'smartclip',

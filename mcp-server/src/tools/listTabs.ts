@@ -1,10 +1,10 @@
-import type { NativeMessagingBridge } from '../bridge/nativeMessaging.js'
+import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const listTabsSchema = {}
 
 export const listTabsDescription = '列出当前 Chrome 浏览器中打开的所有标签页，返回每个标签页的 ID、URL、标题等信息。用于确定要剪藏的目标页面。'
 
-export async function listTabs(bridge: NativeMessagingBridge) {
+export async function listTabs(bridge: WebSocketBridge) {
   const response = await bridge.send('list-tabs')
 
   if (!response.success) {

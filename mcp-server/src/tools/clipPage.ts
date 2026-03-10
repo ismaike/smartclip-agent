@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { NativeMessagingBridge } from '../bridge/nativeMessaging.js'
+import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const clipPageSchema = {
   tabId: z.number().optional().describe('目标标签页 ID。如不提供，且未提供 url，将使用当前活动标签页。'),
@@ -12,7 +12,7 @@ export const clipPageSchema = {
 
 export const clipPageDescription = '一键剪藏：自动提取网页内容并转换为 Markdown。默认直接返回内容，也可以选择保存到指定笔记平台。支持通过 URL 自动打开并剪藏未打开的页面。'
 
-export async function clipPage(bridge: NativeMessagingBridge, args: {
+export async function clipPage(bridge: WebSocketBridge, args: {
   tabId?: number
   url?: string
   destination?: string

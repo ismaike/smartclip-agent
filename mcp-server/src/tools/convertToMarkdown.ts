@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { NativeMessagingBridge } from '../bridge/nativeMessaging.js'
+import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const convertToMarkdownSchema = {
   html: z.string().describe('要转换的 HTML 内容'),
@@ -8,7 +8,7 @@ export const convertToMarkdownSchema = {
 
 export const convertToMarkdownDescription = '将 HTML 内容转换为 Markdown 格式。使用 SmartClip 内置的 Turndown 转换引擎，支持表格、代码块、图片等复杂格式。'
 
-export async function convertToMarkdown(bridge: NativeMessagingBridge, args: { html: string, url: string }) {
+export async function convertToMarkdown(bridge: WebSocketBridge, args: { html: string, url?: string }) {
   const response = await bridge.send('convert-to-markdown', {
     html: args.html,
     url: args.url,
