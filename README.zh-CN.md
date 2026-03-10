@@ -88,5 +88,5 @@ npx smartclip-agent-extension install-skills
 | `list_tabs` | 列出当前 Chrome 中所有已打开的标签页（用于获取特定的 `tabId`）。 |
 | `save_clip` | 允许 AI 构造自定义的 Markdown 内容（例如多篇文章的总结），并直接推送保存到用户的笔记库中。 |
 
-## License
-MIT
+## 开源协议
+[MIT License](LICENSE) © 2024 maike

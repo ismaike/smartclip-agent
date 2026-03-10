@@ -89,4 +89,4 @@ This project embraces the plugin architecture inspired by the [Superpowers](http
 | `save_clip` | Allows the AI to construct its own Markdown (like a summary) and save it directly to Notion, Obsidian, etc. |
 
 ## License
-MIT
+[MIT License](LICENSE) © 2024 maike
