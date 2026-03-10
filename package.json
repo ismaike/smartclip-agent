@@ -4,7 +4,7 @@
   "description": "SmartClip AI Agent Extension with MCP server, skills, and hooks for Gemini, Claude Code, and OpenCode.",
   "main": "install.js",
   "bin": {
-    "smartclip-skill-install": "install.js"
+    "smartclip-skill": "install.js"
   },
   "scripts": {
     "postinstall": "node install.js",
