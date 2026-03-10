@@ -1,0 +1,12 @@
+{
+  "name": "smartclip-agent",
+  "version": "1.0.0",
+  "description": "SmartClip MCP and Skills for AI Agents.",
+  "publisher": "smartclip",
+  "engines": {
+    "gemini": "^1.0.0"
+  },
+  "hooks": {
+    "SessionStart": "hooks/session-start.sh"
+  }
+}

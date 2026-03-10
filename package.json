@@ -1,0 +1,17 @@
+{
+  "name": "smartclip-agent",
+  "version": "1.0.0",
+  "description": "SmartClip AI Agent Extension with MCP server, skills, and hooks for Gemini, Claude Code, and OpenCode.",
+  "main": "install.js",
+  "bin": {
+    "smartclip-agent-install": "install.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js",
+    "install-skills": "node install.js"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "author": "",
+  "license": "MIT"
+}

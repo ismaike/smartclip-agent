@@ -1,0 +1,6 @@
+description = "Quickly read or clip a webpage using SmartClip MCP"
+prompt = """
+Use the `clip_page` tool from the SmartClip MCP to handle this request.
+- If the user only wants to read, summarize, or extract data, do NOT use the destination parameter.
+- If a destination is explicitly specified (like notion, obsidian), use the destination parameter to save it.
+"""
