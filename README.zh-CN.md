@@ -41,7 +41,7 @@ npm install -g smartclip-mcp
 
 在项目根目录运行：
 ```bash
-npx smartclip-skill install-skills
+npx smartclip-agent-extension install-skills
 ```
 *(如果本地克隆了本仓库，直接执行 `node install.js`)*
 

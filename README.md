@@ -41,7 +41,7 @@ This step injects the AI "Skill" (instruction manual) into your workspace so the
 
 In your project directory, run:
 ```bash
-npx smartclip-skill install-skills
+npx smartclip-agent-extension install-skills
 ```
 *(If building locally, run `node install.js` from this repository).*
 
