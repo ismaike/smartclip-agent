@@ -80,7 +80,7 @@ MCP Server 默认使用端口 `18365`。如果被占用，请关闭占用该端�
 ## 开发
 
 ```bash
-cd mcp-server
+cd packages/smartclip-mcp
 npm install
 npm run build
 npm start

@@ -21,7 +21,7 @@ If you use a modern AI CLI tool, this package acts as a full-fledged extension.
 ```bash
 npm install -g smartclip-mcp
 ```
-*(Note: If you are building from source, run `npm link` in the `mcp-server` directory).*
+*(Note: If you are building from source, run `npm link` in the `packages/smartclip-mcp` directory).*
 
 ### 2. Configure MCP in your workspace
 Create or update the `.mcp.json` file in your project root:
@@ -43,7 +43,7 @@ In your project directory, run:
 ```bash
 npx smartclip-agent-extension install-skills
 ```
-*(If building locally, run `node install.js` from this repository).*
+*(If building locally, run `node packages/smartclip-agent-extension/install.js` from this repository).*
 
 This script automatically detects `.gemini/`, `.claude/`, or `.opencode/` folders and places the `using-smartclip-mcp` skill in the right place.
 
@@ -55,7 +55,7 @@ This script automatically detects `.gemini/`, `.claude/`, or `.opencode/` folder
 2. Click **+ Add New MCP Server**.
 3. Set Name to `smartclip` and Type to `command`.
 4. Command: `npx -y smartclip-mcp`.
-5. Add the contents of [`skills/using-smartclip-mcp/SKILL.md`](skills/using-smartclip-mcp/SKILL.md) to your `.cursorrules` or AI instructions so the IDE understands how to behave.
+5. Add the contents of [`packages/smartclip-agent-extension/skills/using-smartclip-mcp/SKILL.md`](packages/smartclip-agent-extension/skills/using-smartclip-mcp/SKILL.md) to your `.cursorrules` or AI instructions so the IDE understands how to behave.
 
 ---
 
@@ -71,11 +71,12 @@ For this MCP to work, you **MUST** have the SmartClip Chrome extension installed
 
 ## Architecture (The "Superpowers" Way)
 
-This project embraces the plugin architecture inspired by the [Superpowers](https://github.com/obra/superpowers) project:
-- **`mcp-server/`**: The WebSocket bridge communicating with Chrome.
-- **`skills/`**: Markdown-based "Frontmatter" guides that teach the AI how to use tools properly (lazy-loaded to save tokens).
-- **`hooks/`**: Shell scripts like `session-start.sh` that run when the AI CLI boots up, automatically checking if port `18365` is open and injecting connection status into the AI's context.
-- **`commands/`**: Shortcut macros (e.g., `/clip`) for rapid execution.
+This project embraces the plugin architecture inspired by the [Superpowers](https://github.com/obra/superpowers) project, structured as a monorepo:
+- **`packages/smartclip-mcp/`**: The WebSocket bridge communicating with Chrome.
+- **`packages/smartclip-agent-extension/`**: Contains the skills, hooks, and commands.
+  - **`skills/`**: Markdown-based "Frontmatter" guides that teach the AI how to use tools properly (lazy-loaded to save tokens).
+  - **`hooks/`**: Shell scripts like `session-start.sh` that run when the AI CLI boots up, automatically checking if port `18365` is open and injecting connection status into the AI's context.
+  - **`commands/`**: Shortcut macros (e.g., `/clip`) for rapid execution.
 
 ---
 

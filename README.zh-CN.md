@@ -21,7 +21,7 @@
 ```bash
 npm install -g smartclip-mcp
 ```
-*(注：本地开发时请在 `mcp-server` 目录执行 `npm link`)*
+*(注：本地开发时请在 `packages/smartclip-mcp` 目录执行 `npm link`)*
 
 ### 2. 在工作区配置 MCP
 在你的项目根目录创建或修改 `.mcp.json`：
@@ -43,7 +43,7 @@ npm install -g smartclip-mcp
 ```bash
 npx smartclip-agent-extension install-skills
 ```
-*(如果本地克隆了本仓库，直接执行 `node install.js`)*
+*(如果本地克隆了本仓库，直接执行 `node packages/smartclip-agent-extension/install.js`)*
 
 安装脚本会自动检测当前目录下的 `.gemini/`、`.claude/` 或 `.opencode/` 文件夹，并将 `using-smartclip-mcp` 技能放置到对应位置供 AI 懒加载。
 
@@ -55,7 +55,7 @@ npx smartclip-agent-extension install-skills
 2. 点击 **+ Add New MCP Server**。
 3. 名称 (Name) 填入 `smartclip`，类型 (Type) 选择 `command`。
 4. Command 填入：`npx -y smartclip-mcp`。
-5. （关键）将本仓库中 [`skills/using-smartclip-mcp/SKILL.md`](skills/using-smartclip-mcp/SKILL.md) 的内容复制粘贴到你的 `.cursorrules` 文件中，让 AI 知道如何正确调用这些工具。
+5. （关键）将本仓库中 [`packages/smartclip-agent-extension/skills/using-smartclip-mcp/SKILL.md`](packages/smartclip-agent-extension/skills/using-smartclip-mcp/SKILL.md) 的内容复制粘贴到你的 `.cursorrules` 文件中，让 AI 知道如何正确调用这些工具。
 
 ---
 
@@ -71,11 +71,12 @@ npx smartclip-agent-extension install-skills
 
 ## 扩展架构设计
 
-本项目的设计灵感来源于 [Superpowers](https://github.com/obra/superpowers) 项目的插件架构：
-- **`mcp-server/`**: 负责与 Chrome 建立 WebSocket 连接的核心桥接代码。
-- **`skills/`**: 基于 Markdown Frontmatter 的技能说明。它们只在 AI 遇到相关问题时才动态加载，极大地节省了上下文 Token。
-- **`hooks/`**: 包含 `session-start.sh` 等脚本。在 AI 启动时，它会自动检测 `18365` 端口是否通畅，并提前告诉 AI 插件是否在线。
-- **`commands/`**: 预设的快捷指令宏，例如直接输入 `/clip` 来触发网页提取。
+本项目的设计灵感来源于 [Superpowers](https://github.com/obra/superpowers) 项目的插件架构，采用 Monorepo 结构进行管理：
+- **`packages/smartclip-mcp/`**: 负责与 Chrome 建立 WebSocket 连接的核心桥接代码。
+- **`packages/smartclip-agent-extension/`**: 包含提供给 AI 的各项扩展能力。
+  - **`skills/`**: 基于 Markdown Frontmatter 的技能说明。它们只在 AI 遇到相关问题时才动态加载，极大地节省了上下文 Token。
+  - **`hooks/`**: 包含 `session-start.sh` 等脚本。在 AI 启动时，它会自动检测 `18365` 端口是否通畅，并提前告诉 AI 插件是否在线。
+  - **`commands/`**: 预设的快捷指令宏，例如直接输入 `/clip` 来触发网页提取。
 
 ---
 
