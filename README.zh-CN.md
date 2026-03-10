@@ -19,7 +19,7 @@
 
 ### 1. 全局安装 MCP Server
 ```bash
-npm install -g @smartclip/mcp-server
+npm install -g smartclip-mcp
 ```
 *(注：本地开发时请在 `mcp-server` 目录执行 `npm link`)*
 
@@ -41,7 +41,7 @@ npm install -g @smartclip/mcp-server
 
 在项目根目录运行：
 ```bash
-npx @smartclip/agent-extension install-skills
+npx smartclip-skill install-skills
 ```
 *(如果本地克隆了本仓库，直接执行 `node install.js`)*
 

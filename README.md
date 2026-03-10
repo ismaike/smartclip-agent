@@ -19,7 +19,7 @@ If you use a modern AI CLI tool, this package acts as a full-fledged extension.
 
 ### 1. Install the MCP Server globally
 ```bash
-npm install -g @smartclip/mcp-server
+npm install -g smartclip-mcp
 ```
 *(Note: If you are building from source, run `npm link` in the `mcp-server` directory).*
 
@@ -41,7 +41,7 @@ This step injects the AI "Skill" (instruction manual) into your workspace so the
 
 In your project directory, run:
 ```bash
-npx @smartclip/agent-extension install-skills
+npx smartclip-skill install-skills
 ```
 *(If building locally, run `node install.js` from this repository).*
 
