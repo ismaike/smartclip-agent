@@ -56,5 +56,9 @@ export async function getTasks(bridge: WebSocketBridge, args: { status?: string 
       type: 'text' as const,
       text: `共 ${tasks.length} 个任务:\n\n${taskList}`,
     }],
+    structuredContent: {
+      tasks,
+      count: tasks.length,
+    },
   }
 }

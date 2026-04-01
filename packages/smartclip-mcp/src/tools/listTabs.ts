@@ -26,5 +26,9 @@ export async function listTabs(bridge: WebSocketBridge) {
         ? `找到 ${tabs.length} 个标签页:\n\n${tabList}`
         : '没有找到打开的标签页',
     }],
+    structuredContent: {
+      tabs,
+      count: tabs.length,
+    },
   }
 }
