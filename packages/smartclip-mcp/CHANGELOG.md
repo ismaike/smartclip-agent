@@ -1,5 +1,16 @@
 # smartclip-mcp
 
+## 0.8.0
+
+### Minor Changes
+
+- 规范协议层
+
+### Patch Changes
+
+- Updated dependencies []:
+  - smartclip-bridge-protocol@0.2.0
+
 ## 0.7.1
 
 ### Patch Changes
