@@ -1,5 +1,5 @@
 ---
-name: process-smartclip-daily-tasks
+name: smartclip-daily
 description: Use when the user asks to view, review, process, or batch-clip their SmartClip daily task pool.
 ---
 

@@ -11,10 +11,10 @@ const AVAILABLE_TARGETS = [
 ];
 
 const skillNames = [
-  'using-smartclip-mcp',
-  'read-webpage-with-smartclip',
-  'save-with-smartclip',
-  'process-smartclip-daily-tasks',
+  'smartclip',
+  'smartclip-read',
+  'smartclip-save',
+  'smartclip-daily',
   'smartclip-troubleshooting'
 ];
 

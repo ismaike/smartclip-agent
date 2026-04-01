@@ -1,5 +1,5 @@
 ---
-name: read-webpage-with-smartclip
+name: smartclip-read
 description: Use when the user wants to read, summarize, inspect, or analyze a webpage without saving it to their note-taking app.
 ---
 

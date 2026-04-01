@@ -1,17 +1,17 @@
 ---
-name: using-smartclip-mcp
+name: smartclip
 description: Use when you need to read or summarize a webpage, extract data from a specific URL or active browser tab, save/clip a webpage to a personal platform like Notion, Obsidian, Flomo, or Joplin, or when the user asks to view or process their daily clipping tasks.
 ---
 
-# Using SmartClip MCP
+# SmartClip
 
 ## Overview
 SmartClip MCP bridges the AI agent and the user's Chrome browser. This umbrella skill should route to the focused skills below whenever possible instead of carrying all instructions itself.
 
 ## Focused skills
-- `read-webpage-with-smartclip` — reading and summarizing without saving
-- `save-with-smartclip` — explicit save/clip workflows
-- `process-smartclip-daily-tasks` — daily task queue flows
+- `smartclip-read` — reading and summarizing without saving
+- `smartclip-save` — explicit save/clip workflows
+- `smartclip-daily` — daily task queue flows
 - `smartclip-troubleshooting` — setup, connection, and doctor workflows
 
 ## When to Use
@@ -36,9 +36,9 @@ SmartClip MCP bridges the AI agent and the user's Chrome browser. This umbrella 
 | **Clip all pending tasks** | `clip_all_daily_tasks` | (No arguments needed, uses default destination) |
 
 ## Routing Guidance
-- If the user wants to read or summarize a webpage, prefer `read-webpage-with-smartclip`.
-- If the user explicitly wants to save content, prefer `save-with-smartclip`.
-- If the user mentions daily tasks, prefer `process-smartclip-daily-tasks`.
+- If the user wants to read or summarize a webpage, prefer `smartclip-read`.
+- If the user explicitly wants to save content, prefer `smartclip-save`.
+- If the user mentions daily tasks, prefer `smartclip-daily`.
 - If MCP is unavailable or disconnected, prefer `smartclip-troubleshooting`.
 
 ## Core Workflows

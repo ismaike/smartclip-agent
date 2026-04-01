@@ -1,5 +1,5 @@
 ---
-name: save-with-smartclip
+name: smartclip-save
 description: Use when the user explicitly wants to save, clip, or send webpage content or generated markdown into Notion, Obsidian, Flomo, Joplin, or another SmartClip destination.
 ---
 

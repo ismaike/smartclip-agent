@@ -166,10 +166,10 @@ smartclip-agent-extension --targets .agents/skills,.claude/skills
 - `.gemini/skills` - Gemini CLI
 
 应出现以下技能目录：
-- `using-smartclip-mcp`
-- `read-webpage-with-smartclip`
-- `save-with-smartclip`
-- `process-smartclip-daily-tasks`
+- `smartclip`
+- `smartclip-read`
+- `smartclip-save`
+- `smartclip-daily`
 - `smartclip-troubleshooting`
 
 ## 7. 运行 doctor 检查
@@ -218,7 +218,7 @@ doctor 主要检查：
 Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 
 1. 配置 MCP server：`npx -y smartclip-mcp`
-2. 手动把 `using-smartclip-mcp/SKILL.md` 的核心说明加入你的 rules / instructions
+2. 手动把 `smartclip/SKILL.md` 的核心说明加入你的 rules / instructions
 3. 如需更细粒度控制，可把拆分后的 skill 内容分别整理到规则系统中
 
 ## 9. 推荐使用姿势

@@ -6,9 +6,9 @@ const path = require('node:path')
 const root = path.join(__dirname, '..')
 const skillsDir = path.join(root, 'skills')
 const skillNames = [
-  'read-webpage-with-smartclip',
-  'save-with-smartclip',
-  'process-smartclip-daily-tasks',
+  'smartclip-read',
+  'smartclip-save',
+  'smartclip-daily',
   'smartclip-troubleshooting',
 ]
 
@@ -27,9 +27,9 @@ test('scenario-based skill files exist with frontmatter', () => {
 })
 
 test('umbrella skill becomes a router to focused skills', () => {
-  const content = readSkill('using-smartclip-mcp')
-  assert.match(content, /read-webpage-with-smartclip/)
-  assert.match(content, /save-with-smartclip/)
-  assert.match(content, /process-smartclip-daily-tasks/)
+  const content = readSkill('smartclip')
+  assert.match(content, /smartclip-read/)
+  assert.match(content, /smartclip-save/)
+  assert.match(content, /smartclip-daily/)
   assert.match(content, /smartclip-troubleshooting/)
 })

@@ -33,10 +33,10 @@ async function runDoctor({ cwd = process.cwd(), checkHealth = true, execCommand 
   const smartclipConfig = mcpJson?.mcpServers?.smartclip
 
   const skills = [
-    'using-smartclip-mcp',
-    'read-webpage-with-smartclip',
-    'save-with-smartclip',
-    'process-smartclip-daily-tasks',
+    'smartclip',
+    'smartclip-read',
+    'smartclip-save',
+    'smartclip-daily',
     'smartclip-troubleshooting',
   ]
   const skillsInstalled = skills.every(skill => fs.existsSync(path.join(__dirname, '..', 'skills', skill, 'SKILL.md')))
