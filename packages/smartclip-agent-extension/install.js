@@ -10,7 +10,13 @@ const targetDirs = [
   { name: 'Sisyphus', dir: '.sisyphus/skills' }
 ];
 
-const sourceSkillDir = path.join(__dirname, 'skills', 'using-smartclip-mcp');
+const skillNames = [
+  'using-smartclip-mcp',
+  'read-webpage-with-smartclip',
+  'save-with-smartclip',
+  'process-smartclip-daily-tasks',
+  'smartclip-troubleshooting'
+];
 const userHome = process.env.HOME || process.env.USERPROFILE;
 const projectRoot = process.cwd(); // Assume the user runs this in their project root
 
@@ -26,15 +32,16 @@ targetDirs.forEach(({ name, dir }) => {
     const parentDir = path.dirname(targetPath);
     if (fs.existsSync(parentDir)) {
       try {
-        if (!fs.existsSync(targetPath)) {
-          fs.mkdirSync(targetPath, { recursive: true });
+        fs.mkdirSync(parentDir, { recursive: true });
+
+        for (const skillName of skillNames) {
+          const skillTargetPath = path.join(parentDir, skillName)
+          fs.mkdirSync(skillTargetPath, { recursive: true })
+          const sourceFile = path.join(__dirname, 'skills', skillName, 'SKILL.md')
+          const targetFile = path.join(skillTargetPath, 'SKILL.md')
+          fs.copyFileSync(sourceFile, targetFile)
+          console.log(`✅ Installed skill for ${name} at: ${targetFile}`)
         }
-        
-        const sourceFile = path.join(sourceSkillDir, 'SKILL.md');
-        const targetFile = path.join(targetPath, 'SKILL.md');
-        
-        fs.copyFileSync(sourceFile, targetFile);
-        console.log(`✅ Installed skill for ${name} at: ${targetFile}`);
       } catch (err) {
         console.error(`❌ Failed to install skill for ${name} at ${targetPath}:`, err.message);
       }

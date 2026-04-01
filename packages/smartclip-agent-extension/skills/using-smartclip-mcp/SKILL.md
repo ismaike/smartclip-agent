@@ -1,12 +1,18 @@
 ---
 name: using-smartclip-mcp
-description: Use when you need to read or summarize a webpage, extract data from a specific URL or active browser tab, or when you are explicitly asked to save/clip a webpage or notes to a personal platform like Notion, Obsidian, Flomo, or Joplin.
+description: Use when you need to read or summarize a webpage, extract data from a specific URL or active browser tab, save/clip a webpage to a personal platform like Notion, Obsidian, Flomo, or Joplin, or when the user asks to view or process their daily clipping tasks.
 ---
 
 # Using SmartClip MCP
 
 ## Overview
-SmartClip MCP bridges the AI agent and the user's Chrome browser. It allows you to read the user's open tabs, extract clean Markdown from any URL (including authenticated or local pages), and optionally save content to their personal knowledge base.
+SmartClip MCP bridges the AI agent and the user's Chrome browser. This umbrella skill should route to the focused skills below whenever possible instead of carrying all instructions itself.
+
+## Focused skills
+- `read-webpage-with-smartclip` — reading and summarizing without saving
+- `save-with-smartclip` — explicit save/clip workflows
+- `process-smartclip-daily-tasks` — daily task queue flows
+- `smartclip-troubleshooting` — setup, connection, and doctor workflows
 
 ## When to Use
 
@@ -14,6 +20,7 @@ SmartClip MCP bridges the AI agent and the user's Chrome browser. It allows you 
 - When standard web fetching fails due to authentication or CAPTCHAs, since SmartClip runs inside the user's browser.
 - When the user explicitly asks to save or "clip" a webpage to their notes (Notion, Obsidian, Flomo, Siyuan, Joplin, Feishu, etc.).
 - When you need to save synthesized information (like a generated summary) directly to the user's knowledge base.
+- When the user asks to view, process, or batch-clip their daily clipping tasks (e.g. "处理今天的任务", "clip my daily tasks", "show my task pool").
 
 ## Quick Reference
 
@@ -24,6 +31,15 @@ SmartClip MCP bridges the AI agent and the user's Chrome browser. It allows you 
 | **Read a background tab** | `list_tabs` then `clip_page` | `list_tabs` -> find `tabId` -> `clip_page({ tabId: 123 })` |
 | **Save a URL to Notion** | `clip_page` | `url: "https://...", destination: "notion"` |
 | **Save a custom summary** | `save_clip` | `destination: "flomo", title: "...", contentMarkdown: "..."` |
+| **View daily task pool** | `get_daily_tasks` | (No arguments, or `status: "pending"`) |
+| **Clip one daily task** | `clip_daily_task` | `taskId: "xxx"` (get ID from `get_daily_tasks`) |
+| **Clip all pending tasks** | `clip_all_daily_tasks` | (No arguments needed, uses default destination) |
+
+## Routing Guidance
+- If the user wants to read or summarize a webpage, prefer `read-webpage-with-smartclip`.
+- If the user explicitly wants to save content, prefer `save-with-smartclip`.
+- If the user mentions daily tasks, prefer `process-smartclip-daily-tasks`.
+- If MCP is unavailable or disconnected, prefer `smartclip-troubleshooting`.
 
 ## Core Workflows
 
@@ -47,6 +63,25 @@ When the user explicitly asks to save a page to their notebook:
 // Only use destination when requested.
 clip_page({ destination: 'obsidian' })
 ```
+
+### 3. Daily Task Pool (Automated Clipping)
+When the user asks to view or process their daily clipping tasks (a queue of URLs synced from the cloud that need to be clipped):
+```javascript
+// Step 1: View pending tasks
+get_daily_tasks({ status: 'pending' })
+
+// Step 2a: Clip a specific task (auto-opens URL, extracts, saves, closes tab)
+clip_daily_task({ taskId: 'task-id-from-step-1' })
+
+// Step 2b: Or batch-clip ALL pending tasks sequentially
+clip_all_daily_tasks()
+```
+
+**Important rules for daily tasks:**
+- Unlike `clip_page`, daily task tools **always save** content. They use the user's configured default destination if none is specified.
+- `clip_daily_task` and `clip_all_daily_tasks` automatically open the URL, extract content, save to the notebook, mark the task as completed, and close the tab.
+- Before batch-processing with `clip_all_daily_tasks`, **always show the user the task list first** and confirm they want to proceed.
+- If the user says "处理今天的任务" / "process my daily tasks" / "clip my tasks", start by calling `get_daily_tasks` to show them what's pending.
 
 ## Common Mistakes (Red Flags)
 
