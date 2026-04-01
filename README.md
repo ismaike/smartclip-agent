@@ -85,6 +85,24 @@ npm install -g smartclip-agent-extension
 smartclip-agent-extension
 ```
 
+安装时会提示选择目标目录：
+- `.agents/skills` - 标准通用目录（推荐）
+- `.claude/skills` - Claude Code
+- `.gemini/skills` - Gemini CLI
+
+也可以使用命令行参数：
+
+```bash
+# 安装到默认目录
+smartclip-agent-extension --default
+
+# 安装到所有支持的目录
+smartclip-agent-extension --all
+
+# 指定目录
+smartclip-agent-extension --targets .agents/skills,.claude/skills
+```
+
 ### Step 6：运行诊断
 
 ```bash

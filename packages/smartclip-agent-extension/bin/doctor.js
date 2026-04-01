@@ -78,9 +78,9 @@ async function runDoctor({ cwd = process.cwd(), checkHealth = true, execCommand 
 
   // Check whether skills were correctly installed to target directories
   const installTargets = [
+    path.join(cwd, '.agents', 'skills'),
     path.join(cwd, '.claude', 'skills'),
     path.join(cwd, '.gemini', 'skills'),
-    path.join(cwd, '.opencode', 'skills'),
   ]
   const installedTargets = installTargets.filter(dir => fs.existsSync(dir))
   const targetSkillsOk = installedTargets.length === 0 || installedTargets.every(dir =>

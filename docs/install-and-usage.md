@@ -123,19 +123,47 @@ pnpm add -g smartclip-agent-extension
 smartclip-agent-extension
 ```
 
-也可以显式执行：
+#### 交互式安装
+
+执行后会提示选择目标目录：
+
+```
+🚀 SmartClip Agent Skills 安装向导
+
+请选择要安装到的目录（输入序号，多个用逗号分隔）:
+
+  [1] Standard (.agents/skills) (默认)
+      推荐 - 标准通用目录
+  [2] Claude Code (.claude/skills)
+      Claude Code 客户端
+  [3] Gemini CLI (.gemini/skills)
+      Gemini CLI 客户端
+
+  [a] 全部安装
+  [q] 退出
+
+请选择 (默认: 1):
+```
+
+#### 非交互模式
 
 ```bash
-smartclip-agent-extension install-skills
+# 安装到默认目录 (.agents/skills)
+smartclip-agent-extension --default
+
+# 安装到所有支持的目录
+smartclip-agent-extension --all
+
+# 指定目录（逗号分隔）
+smartclip-agent-extension --targets .agents/skills,.claude/skills
 ```
 
 ### Step 3：确认安装结果
 
-它会尝试向以下目录安装技能（前提是这些目录已存在）：
-- `.claude/skills`
-- `.gemini/skills`
-- `.opencode/skills`
-- `.sisyphus/skills`
+它会尝试向以下目录安装技能（根据你的选择）：
+- `.agents/skills` - 标准通用目录（推荐）
+- `.claude/skills` - Claude Code
+- `.gemini/skills` - Gemini CLI
 
 应出现以下技能目录：
 - `using-smartclip-mcp`
