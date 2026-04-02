@@ -45,5 +45,16 @@ export async function clipPage(bridge: WebSocketBridge, args: {
 
   return {
     content: [{ type: 'text' as const, text }],
+    structuredContent: {
+      url: response.clip?.url || args.url || '',
+      title: response.clip?.title,
+      markdown: response.markdown,
+      saved: Boolean(args.destination),
+      destination: args.destination,
+      taskId: response.taskId,
+      warning: response.warning,
+      createdTabId: response.createdTabId,
+      clip: response.clip,
+    },
   }
 }

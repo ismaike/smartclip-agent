@@ -10,13 +10,29 @@
  *   smartclip-mcp --help   → 显示帮助
  */
 
+import { readFile } from 'node:fs/promises'
+
 startServer().catch((error) => {
   const err = error instanceof Error ? error : new Error(String(error))
   process.stderr.write(`[smartclip-mcp] Fatal error: ${err.message}\n`)
   process.exitCode = 1
 })
 
+async function loadVersion(): Promise<string> {
+  try {
+    const packageJsonPath = new URL('../package.json', import.meta.url)
+    const content = await readFile(packageJsonPath, 'utf-8')
+    const pkg = JSON.parse(content)
+    return pkg.version || '0.7.0'
+  }
+  catch {
+    return '0.7.0'
+  }
+}
+
 async function startServer() {
+  const version = await loadVersion()
+
   const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js')
   const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js')
   const { WebSocketBridge } = await import('./bridge/websocketBridge.js')
@@ -26,12 +42,19 @@ async function startServer() {
   const { saveClipSchema, saveClipDescription, saveClip } = await import('./tools/saveClip.js')
   const { getTasksSchema, getTasksDescription, getTasks } = await import('./tools/getTasks.js')
   const { clipPageSchema, clipPageDescription, clipPage } = await import('./tools/clipPage.js')
+  const { getDailyTasksSchema, getDailyTasksDescription, getDailyTasks } = await import('./tools/getDailyTasks.js')
+  const { clipDailyTaskSchema, clipDailyTaskDescription, clipDailyTask } = await import('./tools/clipDailyTask.js')
+  const { clipAllDailyTasksSchema, clipAllDailyTasksDescription, clipAllDailyTasks } = await import('./tools/clipAllDailyTasks.js')
+  const { getVocabularySchema, getVocabularyDescription, getVocabulary } = await import('./tools/getVocabulary.js')
+  const { getStatusSchema, getStatusDescription, getStatus } = await import('./tools/getStatus.js')
 
-  const bridge = new WebSocketBridge()
+  const bridge = new WebSocketBridge({
+    sessionToken: process.env.SMARTCLIP_MCP_SESSION_TOKEN,
+  })
 
   const server = new McpServer({
     name: 'smartclip',
-    version: '0.6.0',
+    version,
   })
 
   server.tool('list_tabs', listTabsDescription, listTabsSchema, async () => {
@@ -56,6 +79,26 @@ async function startServer() {
 
   server.tool('clip_page', clipPageDescription, clipPageSchema, async (args) => {
     return await clipPage(bridge, args)
+  })
+
+  server.tool('get_daily_tasks', getDailyTasksDescription, getDailyTasksSchema, async (args) => {
+    return await getDailyTasks(bridge, args)
+  })
+
+  server.tool('clip_daily_task', clipDailyTaskDescription, clipDailyTaskSchema, async (args) => {
+    return await clipDailyTask(bridge, args)
+  })
+
+  server.tool('clip_all_daily_tasks', clipAllDailyTasksDescription, clipAllDailyTasksSchema, async (args) => {
+    return await clipAllDailyTasks(bridge, args)
+  })
+
+  server.tool('get_vocabulary', getVocabularyDescription, getVocabularySchema, async () => {
+    return await getVocabulary(bridge)
+  })
+
+  server.tool('get_status', getStatusDescription, getStatusSchema, async () => {
+    return await getStatus(bridge)
   })
 
   // 启动 WebSocket server，等待 Chrome 扩展连接

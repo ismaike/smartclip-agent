@@ -27,5 +27,9 @@ export async function convertToMarkdown(bridge: WebSocketBridge, args: { html: s
       type: 'text' as const,
       text: response.data?.markdown || response.markdown || '(转换结果为空)',
     }],
+    structuredContent: {
+      markdown: response.data?.markdown || response.markdown || '',
+      frontMatter: response.data?.frontMatter || response.frontMatter || null,
+    },
   }
 }

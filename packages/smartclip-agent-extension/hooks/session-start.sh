@@ -1,8 +1,15 @@
 #!/bin/bash
 
-# Check if the SmartClip MCP Server port is listening
-if lsof -i :18365 > /dev/null 2>&1; then
-    echo "<hook_context>SmartClip MCP Server is currently ONLINE and listening on port 18365. The user's Chrome browser is connected.</hook_context>"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DOCTOR_SCRIPT="$SCRIPT_DIR/../bin/doctor.js"
+
+if [ -f "$DOCTOR_SCRIPT" ]; then
+  DOCTOR_JSON=$(node "$DOCTOR_SCRIPT" --json --no-health 2>/dev/null)
+  if echo "$DOCTOR_JSON" | grep -q '"ok": true'; then
+    echo "<hook_context>SmartClip doctor reports the local MCP setup looks healthy. You can use SmartClip tools when needed.</hook_context>"
+  else
+    echo "<hook_context>SmartClip doctor found setup or connection issues. If SmartClip is needed, verify .mcp.json, ensure the browser extension is installed, and confirm MCP service is enabled in SmartClip settings.</hook_context>"
+  fi
 else
-    echo "<hook_context>SmartClip MCP Server is currently OFFLINE or the Chrome extension is not connected. If the user asks you to clip or read a webpage, you MUST remind them to open their Chrome browser, ensure the SmartClip extension is active, and verify that the 'Enable MCP Service' toggle is ON in settings.</hook_context>"
+  echo "<hook_context>SmartClip doctor is unavailable. If SmartClip commands fail, ask the user to verify installation and MCP setup.</hook_context>"
 fi

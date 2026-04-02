@@ -66,5 +66,11 @@ export async function saveClip(bridge: WebSocketBridge, args: {
 
   return {
     content: [{ type: 'text' as const, text }],
+    structuredContent: {
+      saved: true,
+      destination: args.destination,
+      taskId: response.taskId || null,
+      warning: response.warning || null,
+    },
   }
 }

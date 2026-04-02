@@ -3,6 +3,9 @@
   "private": true,
   "scripts": {
     "build": "pnpm -r build",
-    "publish-all": "pnpm -r publish"
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9"
   }
 }

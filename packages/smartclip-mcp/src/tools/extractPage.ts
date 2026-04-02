@@ -58,5 +58,16 @@ export async function extractPage(bridge: WebSocketBridge, args: { tabId?: numbe
       type: 'text' as const,
       text: `页面内容提取成功:\n\n${summary}\n\n---\n提取的 HTML 内容前 500 字符:\n${(clip.contentHtml || '').substring(0, 500)}...`,
     }],
+    structuredContent: {
+      url: clip.url || '',
+      title: clip.title || null,
+      site: clip.site || null,
+      excerpt: clip.excerpt || null,
+      author: clip.meta?.author || null,
+      publishTime: clip.meta?.publishTime || null,
+      contentHtmlLength: clip.contentHtml?.length || 0,
+      imageCount: clip.images?.length || 0,
+      html: clip.contentHtml || '',
+    },
   }
 }
