@@ -125,11 +125,28 @@ smartclip-agent-extension
 
 #### 交互式安装
 
-执行后会提示选择目标目录：
+执行后会提示选择安装范围：
 
 ```
 🚀 SmartClip Agent Skills 安装向导
 
+请选择安装范围:
+
+  [1] 全局安装 - 安装到用户主目录 (推荐)
+      Mac/Linux: ~/.agents/skills 等
+      Windows:   %USERPROFILE%\.agents\skills 等
+
+  [2] 项目安装 - 安装到当前项目目录
+      当前目录: /path/to/your/project
+
+  [q] 退出
+
+请选择 (默认: 1):
+```
+
+选择范围后，会继续提示选择目标目录：
+
+```
 请选择要安装到的目录（输入序号，多个用逗号分隔）:
 
   [1] Standard (.agents/skills) (默认)
@@ -148,15 +165,28 @@ smartclip-agent-extension
 #### 非交互模式
 
 ```bash
-# 安装到默认目录 (.agents/skills)
-smartclip-agent-extension --default
+# 全局安装（推荐）
+smartclip-agent-extension --global
 
-# 安装到所有支持的目录
-smartclip-agent-extension --all
+# 项目安装
+smartclip-agent-extension --project
 
-# 指定目录（逗号分隔）
-smartclip-agent-extension --targets .agents/skills,.claude/skills
+# 全局安装到默认目录
+smartclip-agent-extension --global --default
+
+# 项目安装到所有目录
+smartclip-agent-extension --project --all
+
+# 指定范围和目录
+smartclip-agent-extension --global --targets .agents/skills,.claude/skills
 ```
+
+**全局安装路径**：
+- Mac/Linux: `~/.agents/skills`, `~/.claude/skills`, `~/.gemini/skills`
+- Windows: `%USERPROFILE%\.agents\skills`, `%USERPROFILE%\.claude\skills`, `%USERPROFILE%\.gemini\skills`
+
+**项目安装路径**：
+- 当前目录下的 `.agents/skills`, `.claude/skills`, `.gemini/skills`
 
 ### Step 3：确认安装结果
 
