@@ -1,5 +1,11 @@
 # smartclip-agent-extension
 
+## 1.2.1
+
+### Patch Changes
+
+- skills rename
+
 ## 1.2.0
 
 ### Minor Changes
