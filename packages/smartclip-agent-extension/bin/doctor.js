@@ -33,7 +33,6 @@ async function runDoctor({ cwd = process.cwd(), checkHealth = true, execCommand 
   const smartclipConfig = mcpJson?.mcpServers?.smartclip
 
   const skills = [
-    'smartclip',
     'smartclip-read',
     'smartclip-save',
     'smartclip-daily',

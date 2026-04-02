@@ -10,6 +10,14 @@ Claude Code <--stdio/MCP--> smartclip-mcp (WebSocket server) <--WebSocket--> Chr
 
 MCP Server 启动时会在本地开一个 WebSocket server（`ws://127.0.0.1:18365`），SmartClip 扩展自动连接。
 
+### 当前连接限制
+
+- 当前实现是 **单客户端独占**，不是多客户端共享服务。
+- 浏览器扩展当前只会连接一个固定地址：`ws://127.0.0.1:18365`。
+- 扩展内部只维护一条 MCP bridge 连接，因此同一时刻只能有一个 AI 客户端实例真正使用 SmartClip。
+- 如果一个 Claude Code / Gemini CLI / OpenCode 已经启动并占用了 `smartclip-mcp`，另一个客户端通常要等前一个 `smartclip-mcp` 退出后才能接管。
+- 即使手动启动多个 `smartclip-mcp` 实例，或者让它们绑定不同端口，也不能让多个客户端同时共享当前这一个浏览器扩展连接；最多只能切换连接目标。
+
 ### 握手与认证
 
 连接建立后，扩展和 MCP server 执行版本化握手：
@@ -127,6 +135,16 @@ smartclip-agent-doctor
 ### 端口冲突
 
 MCP Server 默认使用端口 `18365`。如果被占用，请关闭占用该端口的进程。
+
+### 多客户端同时使用
+
+当前不支持多个 AI 客户端同时共享同一个 SmartClip 扩展连接。
+
+如果你想从另一个客户端接管：
+
+1. 先关闭当前正在使用 SmartClip 的客户端，或结束它启动的 `smartclip-mcp` 进程
+2. 再在新的客户端里触发一次 SmartClip 工具调用
+3. 如果扩展还没自动接上，可在扩展设置页点击“立即重连”或“重新检查”
 
 ## 开发
 

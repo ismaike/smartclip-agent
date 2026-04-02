@@ -12,7 +12,6 @@ const AVAILABLE_TARGETS = [
 ];
 
 const skillNames = [
-  'smartclip',
   'smartclip-read',
   'smartclip-save',
   'smartclip-daily',

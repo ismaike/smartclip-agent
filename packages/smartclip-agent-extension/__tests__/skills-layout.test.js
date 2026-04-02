@@ -12,10 +12,6 @@ const skillNames = [
   'smartclip-troubleshooting',
 ]
 
-function readSkill(name) {
-  return fs.readFileSync(path.join(skillsDir, name, 'SKILL.md'), 'utf8')
-}
-
 test('scenario-based skill files exist with frontmatter', () => {
   for (const name of skillNames) {
     const file = path.join(skillsDir, name, 'SKILL.md')
@@ -26,10 +22,7 @@ test('scenario-based skill files exist with frontmatter', () => {
   }
 })
 
-test('umbrella skill becomes a router to focused skills', () => {
-  const content = readSkill('smartclip')
-  assert.match(content, /smartclip-read/)
-  assert.match(content, /smartclip-save/)
-  assert.match(content, /smartclip-daily/)
-  assert.match(content, /smartclip-troubleshooting/)
+test('legacy umbrella skill is removed', () => {
+  const file = path.join(skillsDir, 'smartclip', 'SKILL.md')
+  assert.equal(fs.existsSync(file), false)
 })

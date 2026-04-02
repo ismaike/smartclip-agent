@@ -15,6 +15,7 @@ import { readFile } from 'node:fs/promises'
 import {
   BRIDGE_PROTOCOL_VERSION,
   BridgeErrorCode,
+  bridgeErrorToCloseCode,
   actionEnvelopeSchema,
   bridgeErrorSchema,
   bridgeResponseSchema,
@@ -27,7 +28,6 @@ import { type WebSocket, WebSocketServer } from 'ws'
 const WS_PORT = 18365
 const HELLO_TIMEOUT_MS = 5000
 const WS_CONNECT_HOST = '127.0.0.1'
-const WS_CONNECT_URL = `ws://${WS_CONNECT_HOST}:${WS_PORT}`
 const WS_BIND_HOST = process.env.SMARTCLIP_MCP_WS_BIND_HOST ?? WS_CONNECT_HOST
 const REQUEST_TIMEOUT_MS = 60000
 
@@ -49,6 +49,16 @@ interface ClientMetadata {
   capabilities: Record<string, boolean>
 }
 
+interface LastHandshakeFailure {
+  code: BridgeErrorCode | null
+  message: string | null
+}
+
+interface LastDisconnectFailure {
+  closeCode: number | null
+  reason: string | null
+}
+
 function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error
     && 'code' in error
@@ -67,6 +77,8 @@ export class WebSocketBridge {
   private _clientMetadata: ClientMetadata | null = null
   private helloTimeout: ReturnType<typeof setTimeout> | null = null
   private serverVersion: string = '0.7.0' // Use current fallback as initial value
+  private lastHandshakeFailure: LastHandshakeFailure = { code: null, message: null }
+  private lastDisconnectFailure: LastDisconnectFailure = { closeCode: null, reason: null }
 
   constructor(options: BridgeOptions = {}) {
     this.sessionToken = options.sessionToken
@@ -109,7 +121,7 @@ export class WebSocketBridge {
         process.stderr.write(`[smartclip-mcp] WebSocket server error: ${err.message}\n`)
         if (!this._listening) {
           const friendly = isErrnoException(err) && err.code === 'EADDRINUSE'
-            ? `端口 ${WS_PORT} 已被占用。请关闭其他 smartclip-mcp 实例后重试。`
+            ? `端口 ${this.port} 已被占用。请关闭其他 smartclip-mcp 实例后重试。`
             : err.message
           reject(new Error(friendly))
         }
@@ -141,12 +153,18 @@ export class WebSocketBridge {
     this._authenticated = false
     this._legacyMode = false
     this._clientMetadata = null
+    this.lastHandshakeFailure = { code: null, message: null }
+    this.lastDisconnectFailure = { closeCode: null, reason: null }
 
     // 设置 hello handshake timeout
     this.helloTimeout = setTimeout(() => {
       if (!this._authenticated && this.extensionSocket === ws) {
         process.stderr.write('[smartclip-mcp] No hello received within 5s, entering legacy mode\n')
         this._legacyMode = true
+        this.lastHandshakeFailure = {
+          code: BridgeErrorCode.HANDSHAKE_TIMEOUT,
+          message: 'No hello received within timeout, fell back to legacy mode',
+        }
         this.helloTimeout = null
       }
     }, HELLO_TIMEOUT_MS)
@@ -159,13 +177,18 @@ export class WebSocketBridge {
       this.handleIncomingMessage(raw)
     })
 
-    ws.on('close', () => {
-      process.stderr.write('[smartclip-mcp] Chrome extension disconnected\n')
+    ws.on('close', (code, reasonBuffer) => {
+      const reason = reasonBuffer.toString() || null
+      process.stderr.write(`[smartclip-mcp] Chrome extension disconnected (code=${code}${reason ? `, reason=${reason}` : ''})\n`)
       if (this.extensionSocket === ws) {
         // 清理 hello timeout
         if (this.helloTimeout) {
           clearTimeout(this.helloTimeout)
           this.helloTimeout = null
+        }
+        this.lastDisconnectFailure = {
+          closeCode: code,
+          reason,
         }
         this.extensionSocket = null
         this._connected = false
@@ -272,7 +295,9 @@ export class WebSocketBridge {
       code,
       error,
     })
+    this.lastHandshakeFailure = { code, message: error }
     this.extensionSocket?.send(JSON.stringify(payload))
+    this.extensionSocket?.close(bridgeErrorToCloseCode(code), error.slice(0, 120))
   }
 
   private handleResponse(response: unknown): void {
@@ -319,16 +344,27 @@ export class WebSocketBridge {
     }
 
     const waitedSec = Math.round(maxWaitMs / 1000)
+    const extraDiagnostics = [
+      this.lastHandshakeFailure.code
+        ? `最近一次握手失败: ${this.lastHandshakeFailure.code}${this.lastHandshakeFailure.message ? ` - ${this.lastHandshakeFailure.message}` : ''}`
+        : null,
+      this.lastDisconnectFailure.closeCode
+        ? `最近一次断开: close code ${this.lastDisconnectFailure.closeCode}${this.lastDisconnectFailure.reason ? ` - ${this.lastDisconnectFailure.reason}` : ''}`
+        : null,
+    ].filter(Boolean).join('\n')
+
     throw new Error(
       `Chrome 扩展未连接（等待 ${waitedSec} 秒超时）。\n`
-      + `MCP WebSocket: ${WS_CONNECT_URL}\n`
+      + `MCP WebSocket: ws://${WS_CONNECT_HOST}:${this.port}\n`
+      + (extraDiagnostics ? `${extraDiagnostics}\n` : '')
       + '请确保：\n'
       + '1. Chrome 浏览器已打开\n'
       + '2. SmartClip 扩展已安装并启用\n'
       + '3. 在 chrome://extensions 中刷新 SmartClip 扩展（确保后台 Service Worker 运行）\n'
+      + '4. 如果扩展诊断面板提示 token 校验失败，请同步扩展 Session Token 与 SMARTCLIP_MCP_SESSION_TOKEN\n'
       + '\n'
       + '如果你在 Docker/WSL/远程环境里运行 smartclip-mcp：\n'
-      + `- 需要把端口 ${WS_PORT} 映射到宿主机，并设置 SMARTCLIP_MCP_WS_BIND_HOST=0.0.0.0`,
+      + `- 需要把端口 ${this.port} 映射到宿主机，并设置 SMARTCLIP_MCP_WS_BIND_HOST=0.0.0.0`,
     )
   }
 
@@ -336,7 +372,10 @@ export class WebSocketBridge {
     await this.waitForExtension()
 
     if (!this._authenticated && !this._legacyMode) {
-      throw new Error('Chrome extension connected but handshake not completed')
+      const detail = this.lastHandshakeFailure.code
+        ? `${this.lastHandshakeFailure.code}${this.lastHandshakeFailure.message ? ` - ${this.lastHandshakeFailure.message}` : ''}`
+        : 'unknown reason'
+      throw new Error(`Chrome extension connected but handshake not completed: ${detail}`)
     }
 
     const id = randomUUID()
@@ -377,6 +416,11 @@ export class WebSocketBridge {
     return this._clientMetadata
   }
 
+  /** @internal For testing only */
+  get handshakeFailure(): { code: BridgeErrorCode | null; message: string | null } {
+    return this.lastHandshakeFailure
+  }
+
   private rejectAllPending(error: Error): void {
     for (const [id, pending] of this.pendingRequests) {
       clearTimeout(pending.timer)
@@ -390,6 +434,8 @@ export class WebSocketBridge {
     this._authenticated = false
     this._legacyMode = false
     this._clientMetadata = null
+    this.lastHandshakeFailure = { code: null, message: null }
+    this.lastDisconnectFailure = { closeCode: null, reason: null }
     this.rejectAllPending(new Error('Bridge disconnected'))
     if (this.extensionSocket) {
       this.extensionSocket.close()

@@ -196,7 +196,6 @@ smartclip-agent-extension --global --targets .agents/skills,.claude/skills
 - `.gemini/skills` - Gemini CLI
 
 应出现以下技能目录：
-- `smartclip`
 - `smartclip-read`
 - `smartclip-save`
 - `smartclip-daily`
@@ -221,7 +220,23 @@ doctor 主要检查：
 - `smartclip-mcp` 是否可执行
 - SmartClip 相关 skills 是否已部署到可识别目录
 
-## 8. 在不同客户端中的使用方式
+## 8. 使用限制与连接模型
+
+在开始多客户端接入前，请先了解当前实现的限制：
+
+- `smartclip-mcp` 当前是 **stdio MCP server + 本地 WebSocket bridge** 的组合，不是一个可以被多个上游客户端同时复用的共享 daemon。
+- 浏览器扩展当前只会连接固定地址 `ws://127.0.0.1:18365`，并且扩展内部只维护一条 MCP bridge 连接。
+- 这意味着，同一时刻只能有一个 AI 客户端实例真正使用 SmartClip MCP。
+- 如果你已经在一个 Claude Code 中使用 SmartClip，再打开另一个 Claude Code、OpenCode 或 Gemini CLI，后一个客户端通常需要等前一个 `smartclip-mcp` 进程退出后才能正常接管。
+- 即使你手动启动多个 `smartclip-mcp` 实例，或者让它们绑定不同端口，也不能让多个客户端同时共享当前这一个浏览器扩展连接；最多只能切换“由谁接管”。
+
+推荐做法：
+
+1. 只在当前正在工作的那个 AI 客户端里启用 SmartClip MCP。
+2. 切换客户端前，先关闭当前正在使用 SmartClip 的客户端，或结束它启动的 `smartclip-mcp` 进程。
+3. 再到新的客户端里触发一次 SmartClip 工具调用，或在扩展设置页中点击“立即重连 / 重新检查”。
+
+## 9. 在不同客户端中的使用方式
 
 ### Claude Code
 
@@ -248,10 +263,10 @@ doctor 主要检查：
 Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 
 1. 配置 MCP server：`npx -y smartclip-mcp`
-2. 手动把 `smartclip/SKILL.md` 的核心说明加入你的 rules / instructions
-3. 如需更细粒度控制，可把拆分后的 skill 内容分别整理到规则系统中
+2. 按场景把 `smartclip-read`、`smartclip-save`、`smartclip-daily`、`smartclip-troubleshooting` 的核心说明加入 rules / instructions
+3. 只放当前客户端真正需要的 skill 说明，避免把所有场景规则混在一起
 
-## 9. 推荐使用姿势
+## 10. 推荐使用姿势
 
 ### 场景 1：只读网页，不保存
 
@@ -292,7 +307,7 @@ Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 - `clip_daily_task`
 - `clip_all_daily_tasks`
 
-## 10. 常见问题排查
+## 11. 常见问题排查
 
 ### 问题 1：AI 说扩展未连接
 
@@ -326,7 +341,19 @@ Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 - 对应平台授权是否有效（如 Notion/Obsidian）
 - 你是否明确让 AI 使用保存动作，而不是只做读取
 
-## 11. 最小可用安装流程（推荐新用户）
+### 问题 5：为什么另一个 Claude Code / Gemini CLI / OpenCode 用不了
+
+检查：
+- 是否已经有另一个客户端启动并占用了 `smartclip-mcp`
+- 当前浏览器扩展是否仍然连着前一个客户端启动的 `smartclip-mcp`
+- 前一个客户端是否已经退出，或对应的 `smartclip-mcp` 进程是否已经结束
+
+说明：
+- 当前实现不支持多个 AI 客户端同时共享同一个 SmartClip 扩展连接
+- 如果要切换客户端，请先结束前一个 `smartclip-mcp`，再让新的客户端重新连接
+- 仅仅换一个端口并不能解决“同时使用”的问题，因为扩展当前只维护一条 bridge 连接
+
+## 12. 最小可用安装流程（推荐新用户）
 
 如果你只想最快跑通，请按这 6 步操作：
 

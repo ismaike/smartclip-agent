@@ -312,7 +312,6 @@ npx smartclip-agent-extension
 ```
 
 然后确认以下目录已生成：
-- `smartclip`
 - `smartclip-read`
 - `smartclip-save`
 - `smartclip-daily`

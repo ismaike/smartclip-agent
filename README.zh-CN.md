@@ -93,6 +93,14 @@ smartclip-agent-doctor
 
 通过后，重启你的 AI 客户端即可开始使用。
 
+## 当前限制
+
+- 当前实现是 **单客户端独占**。同一时刻只能有一个 AI 客户端实例真正使用 SmartClip MCP。
+- 如果一个 Claude Code / Gemini CLI / OpenCode 已经启动并占用了 `smartclip-mcp`，另一个客户端通常需要等待前一个 `smartclip-mcp` 退出后才能接管。
+- 当前浏览器扩展只会连接固定地址 `ws://127.0.0.1:18365`，并且扩展内部只维护一条 MCP bridge 连接。
+- 因此，即使手动启动多个 `smartclip-mcp` 进程，或者假设它们绑定不同端口，也**不能实现多个 AI 客户端同时共享同一个 SmartClip 扩展连接**。
+- 如果你想从另一个客户端接管，最简单的方式是先关闭当前正在使用 SmartClip MCP 的客户端，或结束它启动的 `smartclip-mcp` 进程，再在新的客户端里触发连接。
+
 ## 常用能力
 
 | 场景 | 推荐工具 |
