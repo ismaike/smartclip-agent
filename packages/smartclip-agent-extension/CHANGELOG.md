@@ -1,5 +1,11 @@
 # smartclip-agent-extension
 
+## 1.3.0
+
+### Minor Changes
+
+- support upgrade and uninstall
+
 ## 1.2.1
 
 ### Patch Changes
