@@ -20,5 +20,5 @@ Use this skill when SmartClip is installed incorrectly or not connected.
 4. If needed, guide the user to the Chrome Web Store page.
 
 ## Important reminders
-- MCP service is premium-gated in the extension.
+- MCP service is Pro-gated in the extension (requires a Pro subscription).
 - A running MCP server alone is not enough; the extension must also connect.

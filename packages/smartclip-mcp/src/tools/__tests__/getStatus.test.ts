@@ -15,7 +15,7 @@ function createBridge(statusOverrides: Record<string, unknown> = {}): WebSocketB
     handshakeAcknowledged: false,
     connectionPhase: 'waiting-retry',
     mcpEnabled: true,
-    premium: true,
+    pro: true,
     protocolVersion: '1',
     extensionVersion: '1.2.3',
     lastErrorCode: null,
@@ -60,13 +60,41 @@ describe('getStatus', () => {
     expect(response.content[0].text).toContain('获取状态失败')
   })
 
+  it('renders legacy premium:true status as Pro (backward compat)', async () => {
+    // 旧版扩展发送 premium 字段（无 pro），应归一化并渲染为 Pro
+    const legacyStatus = {
+      serverListening: true,
+      extensionConnected: false,
+      socketConnected: true,
+      mcpEnabled: true,
+      premium: true,
+      protocolVersion: '1',
+      extensionVersion: '1.2.3',
+      lastErrorCode: null,
+      lastErrorMessage: null,
+      reconnectAttempts: 0,
+      nextReconnectAt: null,
+      capabilities: { clipPage: true },
+    }
+    const bridge = {
+      async send() {
+        return { success: true, data: legacyStatus }
+      },
+    } satisfies MockBridge as unknown as WebSocketBridge
+
+    const response = await getStatus(bridge)
+    // 结构化输出归一化为 pro（格式无关，兼容详细/精简两种渲染文案）
+    expect(response.structuredContent?.status.pro).toBe(true)
+    expect(response.content[0].text).not.toContain('Premium')
+  })
+
   describe('renderSuggestion', () => {
     it.each([
       [BridgeErrorCode.MCP_SERVER_UNAVAILABLE, '18365 端口'],
       [BridgeErrorCode.AUTH_FAILED, 'Session Token'],
       [BridgeErrorCode.PROTOCOL_MISMATCH, '同一版本线'],
       [BridgeErrorCode.HANDSHAKE_TIMEOUT, '未完成握手'],
-      [BridgeErrorCode.PREMIUM_REQUIRED, 'Premium'],
+      [BridgeErrorCode.PREMIUM_REQUIRED, 'Pro'],
     ])('includes suggestion for %s', async (errorCode, expectedHint) => {
       const bridge = createBridge({ lastErrorCode: errorCode })
       const response = await getStatus(bridge)

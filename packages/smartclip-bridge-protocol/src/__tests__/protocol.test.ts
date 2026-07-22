@@ -69,7 +69,7 @@ describe('bridge protocol', () => {
       serverListening: true,
       extensionConnected: false,
       mcpEnabled: true,
-      premium: true,
+      pro: true,
       protocolVersion: '1',
       extensionVersion: '1.2.3',
       lastErrorCode: null,
@@ -88,5 +88,36 @@ describe('bridge protocol', () => {
       summary: { total: 2, succeeded: 1, failed: 1 },
       results: [{ taskId: '1', title: 'A', url: 'https://a.com', success: true }],
     })).not.toThrow()
+  })
+})
+
+describe('bridgeStatusSchema pro/premium 归一化（向后兼容）', () => {
+  const base = {
+    serverListening: true,
+    extensionConnected: false,
+    mcpEnabled: true,
+    protocolVersion: '1',
+  }
+
+  it('新版扩展发 pro:true → 输出 pro:true', () => {
+    const result = statusResultSchema.parse({ ...base, pro: true })
+    expect(result.pro).toBe(true)
+    expect(result).not.toHaveProperty('premium')
+  })
+
+  it('旧版扩展发 premium:true → 归一化为 pro:true', () => {
+    const result = statusResultSchema.parse({ ...base, premium: true })
+    expect(result.pro).toBe(true)
+    expect(result).not.toHaveProperty('premium')
+  })
+
+  it('两者皆缺 → 默认 pro:false（无 Pro 权益）', () => {
+    const result = statusResultSchema.parse({ ...base })
+    expect(result.pro).toBe(false)
+  })
+
+  it('两者同时存在 → pro 优先', () => {
+    const result = statusResultSchema.parse({ ...base, pro: true, premium: false })
+    expect(result.pro).toBe(true)
   })
 })

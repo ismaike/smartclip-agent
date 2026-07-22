@@ -99,7 +99,7 @@ function wireClientResponses(
         data: {
           extensionConnected: true,
           mcpEnabled: true,
-          premium: true,
+          pro: true,
           protocolVersion: '1',
           extensionVersion: '0.0.6',
         },
@@ -116,7 +116,8 @@ function wireClientResponses(
       client.ws.send(JSON.stringify({
         id,
         success: false,
-        error: { code: 'UNKNOWN_ACTION', message: 'Unknown action' },
+        error: 'Unknown action',
+        code: 'UNKNOWN_ACTION',
       }))
     }
     // ignore keepalive etc.
@@ -196,7 +197,7 @@ describe('mock extension integration', () => {
     const response = await bridge.send('get-status')
     expect(response.success).toBe(true)
     expect(response.data.extensionVersion).toBe('0.0.6')
-    expect(response.data.premium).toBe(true)
+    expect(response.data.pro).toBe(true)
   })
 
   it('bridge send(list-tabs) returns tab array', async () => {
@@ -217,6 +218,6 @@ describe('mock extension integration', () => {
     }
     const response = await bridge.send('unknown-action' as any)
     expect(response.success).toBe(false)
-    expect(response.error.code).toBe('UNKNOWN_ACTION')
+    expect(response.code).toBe('UNKNOWN_ACTION')
   })
 })

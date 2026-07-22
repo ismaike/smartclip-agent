@@ -16,7 +16,7 @@ function renderSuggestion(status: BridgeStatus): string | null {
     case BridgeErrorCode.HANDSHAKE_TIMEOUT:
       return '建议: smartclip-mcp 接受了连接但未完成握手，通常需要重启旧进程或升级版本。'
     case BridgeErrorCode.PREMIUM_REQUIRED:
-      return '建议: 当前账号需要 Premium 订阅才能使用 MCP。'
+      return '建议: 当前账号需要 Pro 订阅才能使用 MCP。'
     default:
       return null
   }
@@ -34,7 +34,7 @@ function renderStatusText(status: BridgeStatus): string {
     `握手状态: ${status.handshakeAcknowledged ? '已完成' : '未完成'}`,
     `连接阶段: ${status.connectionPhase || 'unknown'}`,
     `扩展开关: ${status.mcpEnabled ? '已开启' : '已关闭'}`,
-    `会员状态: ${status.premium ? 'Premium' : 'Free'}`,
+    `会员状态: ${status.pro ? 'Pro' : 'Free'}`,
     `协议版本: ${status.protocolVersion}`,
     `扩展版本: ${status.extensionVersion || 'unknown'}`,
     `smartclip-mcp 版本: ${status.clientVersion || 'unknown'}`,

@@ -26,7 +26,7 @@
 
 1. 安装 SmartClip 扩展
 2. 登录 SmartClip 账号
-3. 确认当前账号为 Premium（MCP 功能需要 Premium）
+3. 确认当前账号为 Pro（MCP 功能需要 Pro）
 4. 打开 **SmartClip → Options → General Settings**
 5. 打开 **Enable MCP Service / 开启 MCP 服务**
 
@@ -315,7 +315,7 @@ Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 1. Chrome 是否已打开
 2. SmartClip 扩展是否已安装
 3. MCP 开关是否已打开
-4. 是否为 Premium 账号
+4. 是否为 Pro 账号
 5. 扩展设置页中的诊断状态是否正常
 6. 执行 `smartclip-agent-doctor`
 
@@ -358,7 +358,7 @@ Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 如果你只想最快跑通，请按这 6 步操作：
 
 ### Step 1
-安装 SmartClip Chrome 扩展并登录 Premium 账号
+安装 SmartClip Chrome 扩展并登录 Pro 账号
 
 ### Step 2
 在扩展设置中打开 MCP 服务

@@ -51,7 +51,7 @@
 你必须先：
 1. 安装 SmartClip 扩展
 2. 登录账号
-3. 确保是 Premium 用户
+3. 确保是 Pro 用户
 4. 在扩展设置中打开 **Enable MCP Service / 开启 MCP 服务**
 
 ### Step 2：安装 MCP server
