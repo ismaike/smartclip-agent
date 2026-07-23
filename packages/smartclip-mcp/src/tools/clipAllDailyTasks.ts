@@ -1,8 +1,9 @@
+import { destinationSchema } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
 import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const clipAllDailyTasksSchema = {
-  destination: z.enum(['obsidian', 'notion', 'markdown', 'flomo', 'siyuan', 'joplin', 'feishu'])
+  destination: destinationSchema
     .optional()
     .describe('保存目标平台。不提供则使用用户配置的默认平台。'),
   mode: z.enum(['full', 'selection']).default('full')

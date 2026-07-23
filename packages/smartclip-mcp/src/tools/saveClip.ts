@@ -1,3 +1,4 @@
+import { destinationSchema } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
 import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
@@ -9,7 +10,7 @@ export const saveClipSchema = {
   excerpt: z.string().optional().describe('页面摘要'),
   tags: z.array(z.string()).optional().describe('标签列表'),
   author: z.string().optional().describe('作者'),
-  destination: z.enum(['obsidian', 'notion', 'markdown', 'flomo', 'siyuan', 'joplin', 'feishu'])
+  destination: destinationSchema
     .describe('保存目标平台'),
 }
 

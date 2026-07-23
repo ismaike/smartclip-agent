@@ -1,10 +1,11 @@
+import { destinationSchema } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
 import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const clipPageSchema = {
   tabId: z.number().optional().describe('目标标签页 ID。如不提供，且未提供 url，将使用当前活动标签页。'),
   url: z.string().url().optional().describe('要剪藏的网页 URL。如果提供，插件将自动打开该页面并等待加载完成后进行剪藏。'),
-  destination: z.enum(['obsidian', 'notion', 'markdown', 'flomo', 'siyuan', 'joplin', 'feishu'])
+  destination: destinationSchema
     .optional()
     .describe('⚠️ 警告：除非用户明确要求“存到笔记/保存到平台”，否则严禁使用此参数。如果不提供，则进入“极速分析模式”，仅返回 Markdown 内容而不触发任何保存或下载。'),
   mode: z.enum(['full', 'selection']).default('full').describe('提取模式：full 提取整个页面，selection 仅提取选中内容'),

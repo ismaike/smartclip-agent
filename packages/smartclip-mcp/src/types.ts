@@ -2,7 +2,7 @@
  * SmartClip MCP Server 共享类型
  */
 
-export type DestinationKind = 'obsidian' | 'notion' | 'markdown' | 'flomo' | 'siyuan' | 'webdav' | 's3' | 'joplin' | 'feishu'
+export type DestinationKind = 'obsidian' | 'notion' | 'markdown' | 'flomo' | 'siyuan' | 'logseq' | 'joplin' | 'feishu' | 'yuque' | 'memos' | 'wolai' | 'getbiji' | 'flowus' | 's3_doc' | 'aliyun_oss_doc' | 'tencent_cos_doc'
 
 export interface TabInfo {
   id: number

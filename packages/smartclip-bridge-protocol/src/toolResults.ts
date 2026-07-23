@@ -11,7 +11,14 @@ const tabSchema = z.object({
 
 const queuedTaskStatusSchema = z.enum(['queued', 'running', 'succeeded', 'failed', 'cancelled'])
 const dailyTaskStatusSchema = z.enum(['pending', 'completed', 'skipped'])
-const destinationSchema = z.enum(['obsidian', 'notion', 'markdown', 'flomo', 'siyuan', 'webdav', 's3', 'joplin', 'feishu'])
+/**
+ * 剪藏保存目标平台。与扩展端 `DestinationKind`（smartclip 仓库 src/shared/models/clip.ts）保持一致。
+ * 单一事实源：MCP 各工具的 destination 入参 schema 复用此枚举，避免多处重复定义导致漂移。
+ */
+export const destinationSchema = z.enum([
+  'obsidian', 'notion', 'markdown', 'flomo', 'siyuan', 'logseq', 'joplin', 'feishu',
+  'yuque', 'memos', 'wolai', 'getbiji', 'flowus', 's3_doc', 'aliyun_oss_doc', 'tencent_cos_doc',
+])
 
 export const listTabsResultSchema = z.object({
   tabs: z.array(tabSchema),
