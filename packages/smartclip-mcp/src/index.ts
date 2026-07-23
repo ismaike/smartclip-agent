@@ -81,14 +81,8 @@ async function startServer() {
   const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js')
   const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js')
   const { WebSocketBridge } = await import('./bridge/websocketBridge.js')
-  const { listTabsSchema, listTabsDescription, listTabsAnnotations, listTabs } = await import('./tools/listTabs.js')
-  const { saveClipSchema, saveClipDescription, saveClipAnnotations, saveClip } = await import('./tools/saveClip.js')
-  const { clipPageSchema, clipPageDescription, clipPage } = await import('./tools/clipPage.js')
-  const { getDailyTasksSchema, getDailyTasksDescription, getDailyTasksAnnotations, getDailyTasks } = await import('./tools/getDailyTasks.js')
-  const { clipDailyTaskSchema, clipDailyTaskDescription, clipDailyTask } = await import('./tools/clipDailyTask.js')
-  const { clipAllDailyTasksSchema, clipAllDailyTasksDescription, clipAllDailyTasks } = await import('./tools/clipAllDailyTasks.js')
-  const { getVocabularySchema, getVocabularyDescription, getVocabularyAnnotations, getVocabulary } = await import('./tools/getVocabulary.js')
-  const { getStatusSchema, getStatusDescription, getStatusAnnotations, getStatus } = await import('./tools/getStatus.js')
+  const { tools } = await import('./tools/index.js')
+  const { registerTool } = await import('./tools/defineTool.js')
 
   const bridge = new WebSocketBridge({
     sessionToken: process.env.SMARTCLIP_MCP_SESSION_TOKEN,
@@ -99,47 +93,8 @@ async function startServer() {
     version,
   })
 
-  server.tool('list_tabs', listTabsDescription, listTabsSchema, listTabsAnnotations, async () => {
-    return await listTabs(bridge)
-  })
-
-  server.tool('save_clip', saveClipDescription, saveClipSchema, saveClipAnnotations, async (args) => {
-    return await saveClip(bridge, args as any)
-  })
-
-  server.tool('clip_page', clipPageDescription, clipPageSchema, {
-    destructiveHint: false,
-    idempotentHint: true,
-    openWorldHint: true,
-  }, async (args) => {
-    return await clipPage(bridge, args)
-  })
-
-  server.tool('get_daily_tasks', getDailyTasksDescription, getDailyTasksSchema, getDailyTasksAnnotations, async (args) => {
-    return await getDailyTasks(bridge, args)
-  })
-
-  server.tool('clip_daily_task', clipDailyTaskDescription, clipDailyTaskSchema, {
-    destructiveHint: false,
-    idempotentHint: false,
-  }, async (args) => {
-    return await clipDailyTask(bridge, args)
-  })
-
-  server.tool('clip_all_daily_tasks', clipAllDailyTasksDescription, clipAllDailyTasksSchema, {
-    destructiveHint: false,
-    idempotentHint: false,
-  }, async (args) => {
-    return await clipAllDailyTasks(bridge, args)
-  })
-
-  server.tool('get_vocabulary', getVocabularyDescription, getVocabularySchema, getVocabularyAnnotations, async () => {
-    return await getVocabulary(bridge)
-  })
-
-  server.tool('get_status', getStatusDescription, getStatusSchema, getStatusAnnotations, async () => {
-    return await getStatus(bridge)
-  })
+  for (const tool of tools)
+    registerTool(server, tool, bridge)
 
   // 启动 WebSocket server，等待 Chrome 扩展连接
   await bridge.connect()

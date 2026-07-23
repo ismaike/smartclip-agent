@@ -1,3 +1,4 @@
+import { BridgeAction } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
 import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
@@ -16,9 +17,9 @@ export async function extractPage(bridge: WebSocketBridge, args: { tabId?: numbe
   }
   else {
     // 获取当前活动标签页
-    const tabsResponse = await bridge.send('list-tabs')
+    const tabsResponse = await bridge.send(BridgeAction.LIST_TABS)
     if (tabsResponse.success && tabsResponse.data) {
-      const activeTab = tabsResponse.data.find((t: any) => t.active)
+      const activeTab = (tabsResponse.data as any[]).find(t => t.active)
       if (activeTab) {
         data.tabId = activeTab.id
       }
@@ -32,7 +33,7 @@ export async function extractPage(bridge: WebSocketBridge, args: { tabId?: numbe
     }
   }
 
-  const response = await bridge.send('extract-page', data)
+  const response = await bridge.send(BridgeAction.EXTRACT_PAGE, data)
 
   if (!response.success) {
     return {
@@ -41,7 +42,7 @@ export async function extractPage(bridge: WebSocketBridge, args: { tabId?: numbe
     }
   }
 
-  const clip = response.data || {}
+  const clip = (response.data || {}) as any
   const summary = [
     `标题: ${clip.title || '(无标题)'}`,
     `URL: ${clip.url || '(无URL)'}`,

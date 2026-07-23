@@ -6,12 +6,19 @@ import {
   getTasksResultSchema,
   listTabsResultSchema,
 } from 'smartclip-bridge-protocol'
-import { listTabs } from '../listTabs.js'
-import { getTasks } from '../getTasks.js'
-import { getDailyTasks } from '../getDailyTasks.js'
-import { clipAllDailyTasks } from '../clipAllDailyTasks.js'
-import { clipPage } from '../clipPage.js'
+import type { ToolContext } from '../../tools/defineTool.js'
+import listTabsTool from '../listTabs.js'
+import getDailyTasksTool from '../getDailyTasks.js'
+import clipAllDailyTasksTool from '../clipAllDailyTasks.js'
+import clipPageTool from '../clipPage.js'
+import { getTasks } from '../../internal/getTasks.js'
 
+/** mock send for converted tools（返回 success 响应，不检查 success——那是 defineTool 的职责） */
+function mockSend(responseMap: Record<string, any>): ToolContext['send'] {
+  return async (action: any) => responseMap[action] as any
+}
+
+/** mock bridge for legacy tools（getTasks 等未转换的工具仍用 bridge.send） */
 function createBridge(responseMap: Record<string, any>) {
   return {
     async send(action: string) {
@@ -22,18 +29,20 @@ function createBridge(responseMap: Record<string, any>) {
 
 describe('structured MCP outputs', () => {
   it('returns structured tab data from listTabs', async () => {
-    const result = await listTabs(createBridge({
-      'list-tabs': {
-        success: true,
-        data: [{ id: 123, title: 'Example', url: 'https://example.com', active: true, windowId: 1 }],
-      },
-    }))
+    const result = await listTabsTool.execute({}, {
+      send: mockSend({
+        'list-tabs': {
+          success: true,
+          data: [{ id: 123, title: 'Example', url: 'https://example.com', active: true, windowId: 1 }],
+        },
+      }),
+    })
 
-    expect(result.content[0].text).toContain('Tab 123')
-    expect(() => listTabsResultSchema.parse(result.structuredContent)).not.toThrow()
+    expect(result.text).toContain('Tab 123')
+    expect(() => listTabsResultSchema.parse(result.structured)).not.toThrow()
   })
 
-  it('returns structured task data from getTasks', async () => {
+  it('returns structured task data from getTasks (legacy tool)', async () => {
     const result = await getTasks(createBridge({
       'get-tasks': {
         success: true,
@@ -46,50 +55,56 @@ describe('structured MCP outputs', () => {
   })
 
   it('returns structured daily task data from getDailyTasks', async () => {
-    const result = await getDailyTasks(createBridge({
-      'get-daily-tasks': {
-        success: true,
-        data: [{ id: 'daily-1', title: 'Read', url: 'https://example.com', status: 'pending' }],
-        lastSyncAt: 123,
-      },
-    }), {})
+    const result = await getDailyTasksTool.execute({ status: undefined }, {
+      send: mockSend({
+        'get-daily-tasks': {
+          success: true,
+          data: [{ id: 'daily-1', title: 'Read', url: 'https://example.com', status: 'pending' }],
+          lastSyncAt: 123,
+        },
+      }),
+    })
 
-    expect(() => getDailyTasksResultSchema.parse(result.structuredContent)).not.toThrow()
-    expect(result.structuredContent?.lastSyncAt).toBe(123)
+    expect(() => getDailyTasksResultSchema.parse(result.structured)).not.toThrow()
+    expect(result.structured?.lastSyncAt).toBe(123)
   })
 
   it('returns structured batch results from clipAllDailyTasks', async () => {
-    const result = await clipAllDailyTasks(createBridge({
-      'clip-all-daily-tasks': {
-        success: true,
-        data: {
-          total: 2,
-          succeeded: 1,
-          failed: 1,
-          results: [
-            { taskId: '1', title: 'A', url: 'https://a.com', success: true },
-            { taskId: '2', title: 'B', url: 'https://b.com', success: false, error: 'boom' },
-          ],
+    const result = await clipAllDailyTasksTool.execute({ mode: 'full', closeTab: true }, {
+      send: mockSend({
+        'clip-all-daily-tasks': {
+          success: true,
+          data: {
+            total: 2,
+            succeeded: 1,
+            failed: 1,
+            results: [
+              { taskId: '1', title: 'A', url: 'https://a.com', success: true },
+              { taskId: '2', title: 'B', url: 'https://b.com', success: false, error: 'boom' },
+            ],
+          },
         },
-      },
-    }), { mode: 'full', closeTab: true })
+      }),
+    })
 
-    expect(() => clipAllDailyTasksResultSchema.parse(result.structuredContent)).not.toThrow()
-    expect(result.structuredContent?.summary.total).toBe(2)
-    expect(result.structuredContent?.results[1].success).toBe(false)
+    expect(() => clipAllDailyTasksResultSchema.parse(result.structured)).not.toThrow()
+    expect(result.structured?.summary.total).toBe(2)
+    expect(result.structured?.results[1].success).toBe(false)
   })
 
   it('returns structured clipPage result', async () => {
-    const result = await clipPage(createBridge({
-      'clip-page': {
-        success: true,
-        markdown: '# Example',
-        clip: { url: 'https://example.com', title: 'Example' },
-        taskId: 'task-1',
-      },
-    }), { mode: 'full', destination: 'markdown' })
+    const result = await clipPageTool.execute({ mode: 'full', destination: 'markdown' }, {
+      send: mockSend({
+        'clip-page': {
+          success: true,
+          markdown: '# Example',
+          clip: { url: 'https://example.com', title: 'Example' },
+          taskId: 'task-1',
+        },
+      }),
+    })
 
-    expect(() => clipPageResultSchema.parse(result.structuredContent)).not.toThrow()
-    expect(result.structuredContent?.saved).toBe(true)
+    expect(() => clipPageResultSchema.parse(result.structured)).not.toThrow()
+    expect(result.structured?.saved).toBe(true)
   })
 })

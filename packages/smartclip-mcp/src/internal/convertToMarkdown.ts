@@ -1,3 +1,4 @@
+import { BridgeAction } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
 import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
@@ -9,7 +10,7 @@ export const convertToMarkdownSchema = {
 export const convertToMarkdownDescription = '将 HTML 内容转换为 Markdown 格式。使用 SmartClip 内置的 Turndown 转换引擎，支持表格、代码块、图片等复杂格式。'
 
 export async function convertToMarkdown(bridge: WebSocketBridge, args: { html: string, url?: string }) {
-  const response = await bridge.send('convert-to-markdown', {
+  const response = await bridge.send(BridgeAction.CONVERT_TO_MARKDOWN, {
     html: args.html,
     url: args.url,
     clip: { url: args.url },
@@ -22,14 +23,15 @@ export async function convertToMarkdown(bridge: WebSocketBridge, args: { html: s
     }
   }
 
+  const data = response.data as any
   return {
     content: [{
       type: 'text' as const,
-      text: response.data?.markdown || response.markdown || '(转换结果为空)',
+      text: data?.markdown || response.markdown || '(转换结果为空)',
     }],
     structuredContent: {
-      markdown: response.data?.markdown || response.markdown || '',
-      frontMatter: response.data?.frontMatter || response.frontMatter || null,
+      markdown: data?.markdown || response.markdown || '',
+      frontMatter: data?.frontMatter || response.frontMatter || null,
     },
   }
 }

@@ -1,61 +1,42 @@
 import { describe, it, expect } from 'vitest'
 import { BridgeAction } from 'smartclip-bridge-protocol'
-import * as fs from 'node:fs'
-import * as path from 'node:path'
+import { tools } from '../tools/index.js'
 
 /**
- * Contract test: ensures that every BridgeAction declared in the shared
- * protocol package is either exposed as an MCP tool or explicitly annotated
- * as extension-internal (not reachable from MCP stdio clients).
+ * Contract test: 确保 BridgeAction 协议与 MCP 工具注册表保持一致。
+ * 注册表（tools/index.ts）是单一事实源，不再解析 index.ts 源码。
  */
 
-// 从 index.ts 源码自动提取注册的 MCP tool 名称
-function extractRegisteredToolsFromSource(): string[] {
-  const indexPath = path.join(__dirname, '..', 'index.ts')
-  const source = fs.readFileSync(indexPath, 'utf-8')
-
-  // 匹配 server.tool('tool_name', ...) 调用
-  const toolRegex = /server\.tool\s*\(\s*['"]([^'"]+)['"]/g
-  const tools: string[] = []
-  let match
-  while ((match = toolRegex.exec(source)) !== null) {
-    tools.push(match[1])
-  }
-  return tools
-}
-
-const registeredMcpTools = extractRegisteredToolsFromSource()
-
-// Actions that are intentionally extension-only and NOT exposed via MCP.
-// These are internal steps invoked by clip_page on the extension side.
-const extensionOnlyActions: BridgeAction[] = [
-  'extract-page' as BridgeAction,
-  'convert-to-markdown' as BridgeAction,
-  'get-tasks' as BridgeAction,
+// 扩展内部 action——存在于协议枚举中但有意不暴露为 MCP 工具
+const extensionOnlyActions: string[] = [
+  BridgeAction.EXTRACT_PAGE,
+  BridgeAction.CONVERT_TO_MARKDOWN,
+  BridgeAction.GET_TASKS,
 ]
 
-// Convert kebab-case tool name → BridgeAction value
+// snake_case 工具名 → kebab-case BridgeAction
 function toolToAction(toolName: string): string {
   return toolName.replace(/_/g, '-')
 }
 
-function getAllActions(): BridgeAction[] {
+function getAllActions(): string[] {
   return Object.values(BridgeAction)
 }
+
+const registeredActions = tools.map(t => toolToAction(t.name))
 
 describe('bridge protocol ↔ MCP tool contract', () => {
   it('every BridgeAction is either an MCP tool or explicitly marked extension-only', () => {
     const allActions = getAllActions()
-    const mcpActions = registeredMcpTools.map(toolToAction)
 
     for (const action of allActions) {
-      const isMcpTool = mcpActions.includes(action)
+      const isMcpTool = registeredActions.includes(action)
       const isExtensionOnly = extensionOnlyActions.includes(action)
 
       expect(
         isMcpTool || isExtensionOnly,
-        `BridgeAction "${action}" is not registered as an MCP tool and not marked extension-only. ` +
-        `Add it to registeredMcpTools or extensionOnlyActions.`,
+        `BridgeAction "${action}" is not in the tool registry and not marked extension-only. ` +
+        `Add it to tools/index.ts or extensionOnlyActions.`,
       ).toBe(true)
     }
   })
@@ -63,11 +44,10 @@ describe('bridge protocol ↔ MCP tool contract', () => {
   it('registered MCP tool names map to valid BridgeAction values', () => {
     const allActionValues = new Set<string>(getAllActions())
 
-    for (const tool of registeredMcpTools) {
-      const action = toolToAction(tool)
+    for (const action of registeredActions) {
       expect(
         allActionValues.has(action),
-        `MCP tool "${tool}" maps to action "${action}" which is not a valid BridgeAction.`,
+        `MCP tool maps to action "${action}" which is not a valid BridgeAction.`,
       ).toBe(true)
     }
   })
@@ -81,21 +61,17 @@ describe('bridge protocol ↔ MCP tool contract', () => {
       toolToAction('save_clip'),
     ]
 
-    const mcpActions = registeredMcpTools.map(toolToAction)
     for (const action of critical) {
-      expect(mcpActions).toContain(action)
+      expect(registeredActions).toContain(action)
     }
   })
 
-  it('all tools return structuredContent', () => {
-    // 自动发现 tools 目录中的所有 .ts 文件（排除 __tests__）
-    const toolsDir = path.join(__dirname, '..', 'tools')
-    const toolFiles = fs.readdirSync(toolsDir)
-      .filter(f => f.endsWith('.ts') && !f.includes('.test.'))
-
-    for (const file of toolFiles) {
-      const source = fs.readFileSync(path.join(toolsDir, file), 'utf8')
-      expect(source.includes('structuredContent'), `Tool ${file} does not return structuredContent`).toBe(true)
+  it('every tool in the registry has required descriptor fields', () => {
+    for (const tool of tools) {
+      expect(tool.name, `tool missing name`).toBeTruthy()
+      expect(tool.description, `tool "${tool.name}" missing description`).toBeTruthy()
+      expect(tool.errorLabel, `tool "${tool.name}" missing errorLabel`).toBeTruthy()
+      expect(typeof tool.execute, `tool "${tool.name}" missing execute`).toBe('function')
     }
   })
 })

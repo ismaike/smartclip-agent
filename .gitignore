@@ -1,3 +1,40 @@
+# 依赖
 node_modules/
+
+# 构建产物
 dist/
+
+# 环境变量与密钥
 .env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
+# 编辑器 / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 测试覆盖
+coverage/
+*.lcov
+
+# 日志
+*.log
+npm-debug.log*
+
+# TypeScript 构建缓存
+*.tsbuildinfo
+
+# AI Agent 配置与技能（本地工具链，非项目源码）
+.claude/
+.agents/
+.pi/
+.pi-subagents/
+.mcp.json
+plans/
+skills-lock.json

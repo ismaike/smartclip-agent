@@ -1,14 +1,6 @@
 import { BridgeErrorCode, bridgeStatusSchema, type BridgeStatus } from 'smartclip-bridge-protocol'
-import type { WebSocketBridge } from '../bridge/websocketBridge.js'
-
-export const getStatusSchema = {}
-
-export const getStatusDescription = '获取MCP连接状态。'
-
-export const getStatusAnnotations = {
-  readOnlyHint: true,
-  idempotentHint: true,
-} as const
+import { BridgeAction } from 'smartclip-bridge-protocol'
+import type { ToolDescriptor, ToolContext } from './defineTool.js'
 
 function renderSuggestion(status: BridgeStatus): string | null {
   switch (status.lastErrorCode) {
@@ -46,27 +38,27 @@ function renderStatusText(status: BridgeStatus): string {
   return lines.join(' | ')
 }
 
-export async function getStatus(bridge: WebSocketBridge) {
-  const response = await bridge.send('get-status')
+export default {
+  name: 'get_status',
+  description: '获取MCP连接状态。',
+  schema: {},
+  annotations: {
+    readOnlyHint: true,
+    idempotentHint: true,
+  },
+  errorLabel: '获取状态失败',
+  async execute(_args: unknown, { send }: ToolContext) {
+    const r = await send(BridgeAction.GET_STATUS)
 
-  if (!response.success) {
-    return {
-      content: [{ type: 'text' as const, text: `获取状态失败: ${response.error}` }],
-      isError: true,
+    const parseResult = bridgeStatusSchema.safeParse(r.data)
+    if (!parseResult.success) {
+      throw new Error(`状态数据格式无效: ${parseResult.error.message}`)
     }
-  }
 
-  const parseResult = bridgeStatusSchema.safeParse(response.data)
-  if (!parseResult.success) {
+    const status = parseResult.data
     return {
-      content: [{ type: 'text' as const, text: `状态数据格式无效: ${parseResult.error.message}` }],
-      isError: true,
+      text: renderStatusText(status),
+      structured: { status },
     }
-  }
-
-  const status = parseResult.data
-  return {
-    content: [{ type: 'text' as const, text: renderStatusText(status) }],
-    structuredContent: { status },
-  }
-}
+  },
+} satisfies ToolDescriptor

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { BridgeAction } from 'smartclip-bridge-protocol'
 import { WebSocket } from 'ws'
 
 /**
@@ -194,7 +195,7 @@ describe('mock extension integration', () => {
       console.warn(`Skipping: ${skipReason}`)
       return
     }
-    const response = await bridge.send('get-status')
+    const response = await bridge.send(BridgeAction.GET_STATUS)
     expect(response.success).toBe(true)
     expect(response.data.extensionVersion).toBe('0.0.6')
     expect(response.data.pro).toBe(true)
@@ -205,7 +206,7 @@ describe('mock extension integration', () => {
       console.warn(`Skipping: ${skipReason}`)
       return
     }
-    const response = await bridge.send('list-tabs')
+    const response = await bridge.send(BridgeAction.LIST_TABS)
     expect(response.success).toBe(true)
     expect(Array.isArray(response.data)).toBe(true)
     expect(response.data[0].url).toBe('https://example.com')
@@ -216,7 +217,7 @@ describe('mock extension integration', () => {
       console.warn(`Skipping: ${skipReason}`)
       return
     }
-    const response = await bridge.send('unknown-action' as any)
+    const response = await bridge.send('unknown-action' as BridgeAction)
     expect(response.success).toBe(false)
     expect(response.code).toBe('UNKNOWN_ACTION')
   })

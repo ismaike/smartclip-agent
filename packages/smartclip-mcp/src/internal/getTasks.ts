@@ -1,3 +1,4 @@
+import { BridgeAction } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
 import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
@@ -9,7 +10,7 @@ export const getTasksSchema = {
 export const getTasksDescription = '查看剪藏任务队列的状态。可以查看所有任务或按状态过滤（queued/running/succeeded/failed/cancelled）。'
 
 export async function getTasks(bridge: WebSocketBridge, args: { status?: string }) {
-  const response = await bridge.send('get-tasks', { status: args.status })
+  const response = await bridge.send(BridgeAction.GET_TASKS, { status: args.status })
 
   if (!response.success) {
     return {
@@ -18,7 +19,7 @@ export async function getTasks(bridge: WebSocketBridge, args: { status?: string 
     }
   }
 
-  const tasks = response.data || []
+  const tasks = (response.data || []) as any[]
   if (tasks.length === 0) {
     return {
       content: [{

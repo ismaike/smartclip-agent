@@ -14,6 +14,7 @@ import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import {
   BRIDGE_PROTOCOL_VERSION,
+  BridgeAction,
   BridgeErrorCode,
   bridgeErrorToCloseCode,
   actionEnvelopeSchema,
@@ -32,7 +33,7 @@ const WS_BIND_HOST = process.env.SMARTCLIP_MCP_WS_BIND_HOST ?? WS_CONNECT_HOST
 const REQUEST_TIMEOUT_MS = 60000
 
 interface PendingRequest {
-  resolve: (value: any) => void
+  resolve: (value: BridgeResponse) => void
   reject: (reason: Error) => void
   timer: ReturnType<typeof setTimeout>
 }
@@ -368,7 +369,7 @@ export class WebSocketBridge {
     )
   }
 
-  async send(action: string, data?: any): Promise<any> {
+  async send(action: BridgeAction, data?: unknown): Promise<BridgeResponse> {
     await this.waitForExtension()
 
     if (!this._authenticated && !this._legacyMode) {
@@ -381,7 +382,7 @@ export class WebSocketBridge {
     const id = randomUUID()
     const message = JSON.stringify({ id, action, data })
 
-    return new Promise((resolve, reject) => {
+    return new Promise<BridgeResponse>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pendingRequests.delete(id)
         reject(new Error(`Request timeout: ${action} (${REQUEST_TIMEOUT_MS}ms)`))
