@@ -21,4 +21,6 @@ export interface BridgeResponse {
   taskId?: string
   markdown?: string
   frontMatter?: Record<string, any>
+  clip?: Record<string, any>
+  createdTabId?: number
 }
