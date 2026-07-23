@@ -90,10 +90,10 @@ describe('getStatus', () => {
 
   describe('renderSuggestion', () => {
     it.each([
-      [BridgeErrorCode.MCP_SERVER_UNAVAILABLE, '18365 端口'],
+      [BridgeErrorCode.MCP_SERVER_UNAVAILABLE, '18365'],
       [BridgeErrorCode.AUTH_FAILED, 'Session Token'],
-      [BridgeErrorCode.PROTOCOL_MISMATCH, '同一版本线'],
-      [BridgeErrorCode.HANDSHAKE_TIMEOUT, '未完成握手'],
+      [BridgeErrorCode.PROTOCOL_MISMATCH, '同一版本'],
+      [BridgeErrorCode.HANDSHAKE_TIMEOUT, '重启'],
       [BridgeErrorCode.PREMIUM_REQUIRED, 'Pro'],
     ])('includes suggestion for %s', async (errorCode, expectedHint) => {
       const bridge = createBridge({ lastErrorCode: errorCode })

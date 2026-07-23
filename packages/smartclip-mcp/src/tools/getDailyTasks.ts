@@ -3,17 +3,22 @@ import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const getDailyTasksSchema = {
   status: z.enum(['pending', 'completed', 'skipped']).optional()
-    .describe('按状态过滤任务。不提供则返回所有任务。'),
+    .describe('按状态过滤'),
 }
 
-export const getDailyTasksDescription = '查看每日待剪藏任务池。返回从云端同步的待剪藏网页列表，可按状态过滤（pending/completed/skipped）。用于了解今天有哪些网页需要剪藏。'
+export const getDailyTasksDescription = '查看每日待剪藏任务池。'
+
+export const getDailyTasksAnnotations = {
+  readOnlyHint: true,
+  idempotentHint: true,
+} as const
 
 export async function getDailyTasks(bridge: WebSocketBridge, args: { status?: string }) {
   const response = await bridge.send('get-daily-tasks', { status: args.status })
 
   if (!response.success) {
     return {
-      content: [{ type: 'text' as const, text: `获取每日任务列表失败: ${response.error}` }],
+      content: [{ type: 'text' as const, text: `获取每日任务失败: ${response.error}` }],
       isError: true,
     }
   }

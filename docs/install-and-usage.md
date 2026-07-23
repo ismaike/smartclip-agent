@@ -5,6 +5,7 @@
 ## 1. 你会得到什么
 
 安装完成后，你的 AI agent 可以：
+
 - 读取当前 Chrome 中打开的网页
 - 提取网页正文并转成 Markdown
 - 将内容保存到 Obsidian / Notion / Flomo / Joplin / 思源 / 飞书等
@@ -15,6 +16,7 @@
 ### Step 1：准备运行环境
 
 确保已安装：
+
 - Node.js >= 18
 - npm 或 pnpm
 - Chrome 浏览器
@@ -35,14 +37,16 @@
 通常有两部分：
 
 ### 必装部分
+
 1. `smartclip-mcp`
-   - MCP server
-   - 为 AI 客户端提供 stdio MCP 服务
+  - MCP server
+  - 为 AI 客户端提供 stdio MCP 服务
 
 ### 推荐安装部分
-2. `smartclip-agent-extension`
-   - 安装技能、hooks、doctor CLI
-   - 帮助 Claude Code / Gemini CLI / OpenCode 更稳定地调用 SmartClip
+
+1. `smartclip-agent-extension`
+  - 安装技能、hooks、doctor CLI
+  - 帮助 Claude Code / Gemini CLI / OpenCode 更稳定地调用 SmartClip
 
 ## 4. 安装 smartclip-mcp
 
@@ -182,20 +186,24 @@ smartclip-agent-extension --global --targets .agents/skills,.claude/skills
 ```
 
 **全局安装路径**：
+
 - Mac/Linux: `~/.agents/skills`, `~/.claude/skills`, `~/.gemini/skills`
 - Windows: `%USERPROFILE%\.agents\skills`, `%USERPROFILE%\.claude\skills`, `%USERPROFILE%\.gemini\skills`
 
 **项目安装路径**：
+
 - 当前目录下的 `.agents/skills`, `.claude/skills`, `.gemini/skills`
 
 ### Step 3：确认安装结果
 
 它会尝试向以下目录安装技能（根据你的选择）：
+
 - `.agents/skills` - 标准通用目录（推荐）
 - `.claude/skills` - Claude Code
 - `.gemini/skills` - Gemini CLI
 
 应出现以下技能目录：
+
 - `smartclip-read`
 - `smartclip-save`
 - `smartclip-daily`
@@ -216,6 +224,7 @@ smartclip-agent-doctor --json
 ```
 
 doctor 主要检查：
+
 - `.mcp.json` 是否存在 `smartclip` 配置
 - `smartclip-mcp` 是否可执行
 - SmartClip 相关 skills 是否已部署到可识别目录
@@ -246,6 +255,7 @@ doctor 主要检查：
 4. 打开 Claude Code 并进入该项目
 
 推荐使用方式：
+
 - “读取当前网页” → `clip_page`（不传 `destination`）
 - “保存到 Obsidian/Notion” → `clip_page` + `destination`
 - “检查连接状态” → `get_status`
@@ -253,6 +263,7 @@ doctor 主要检查：
 ### Gemini CLI / OpenCode
 
 流程与 Claude Code 类似：
+
 1. 在项目目录中配置 `.mcp.json`
 2. 创建对应的 skills 目录
 3. 执行 `smartclip-agent-extension`
@@ -271,38 +282,46 @@ Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 ### 场景 1：只读网页，不保存
 
 告诉 AI：
+
 - “读取当前网页内容”
 - “总结这个页面”
 - “读取这个 URL 并分析”
 
 此时应优先使用：
+
 - `clip_page`（**不传** `destination`）
 
 ### 场景 2：保存网页到笔记工具
 
 告诉 AI：
+
 - “把当前页面保存到 Obsidian”
 - “把这个网页剪藏到 Notion”
 
 此时应使用：
+
 - `clip_page` + `destination`
 
 ### 场景 3：保存 AI 自己生成的总结
 
 告诉 AI：
+
 - “把你刚才的总结保存到 Notion”
 
 此时应使用：
+
 - `save_clip`
 
 ### 场景 4：处理每日任务池
 
 告诉 AI：
+
 - “看看今天有哪些待处理任务”
 - “处理一个 daily task”
 - “批量处理所有待剪藏任务”
 
 此时应使用：
+
 - `get_daily_tasks`
 - `clip_daily_task`
 - `clip_all_daily_tasks`
@@ -312,6 +331,7 @@ Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 ### 问题 1：AI 说扩展未连接
 
 按顺序检查：
+
 1. Chrome 是否已打开
 2. SmartClip 扩展是否已安装
 3. MCP 开关是否已打开
@@ -322,6 +342,7 @@ Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 ### 问题 2：配置了 `.mcp.json` 但工具还是不可用
 
 检查：
+
 - 当前 AI 客户端是否支持 MCP
 - `.mcp.json` 是否放在正确项目根目录
 - 当前会话是否已经重启
@@ -330,6 +351,7 @@ Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 ### 问题 3：设置了 token 后认证失败
 
 检查：
+
 - `.mcp.json` 中的 `SMARTCLIP_MCP_SESSION_TOKEN`
 - SmartClip 扩展中的 token
 - 是否存在前后空格或复制错误
@@ -337,6 +359,7 @@ Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 ### 问题 4：只能读网页，不能保存
 
 检查：
+
 - SmartClip 扩展中的目标平台是否已经配置
 - 对应平台授权是否有效（如 Notion/Obsidian）
 - 你是否明确让 AI 使用保存动作，而不是只做读取
@@ -344,11 +367,13 @@ Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 ### 问题 5：为什么另一个 Claude Code / Gemini CLI / OpenCode 用不了
 
 检查：
+
 - 是否已经有另一个客户端启动并占用了 `smartclip-mcp`
 - 当前浏览器扩展是否仍然连着前一个客户端启动的 `smartclip-mcp`
 - 前一个客户端是否已经退出，或对应的 `smartclip-mcp` 进程是否已经结束
 
 说明：
+
 - 当前实现不支持多个 AI 客户端同时共享同一个 SmartClip 扩展连接
 - 如果要切换客户端，请先结束前一个 `smartclip-mcp`，再让新的客户端重新连接
 - 仅仅换一个端口并不能解决“同时使用”的问题，因为扩展当前只维护一条 bridge 连接
@@ -358,12 +383,15 @@ Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
 如果你只想最快跑通，请按这 6 步操作：
 
 ### Step 1
+
 安装 SmartClip Chrome 扩展并登录 Pro 账号
 
 ### Step 2
+
 在扩展设置中打开 MCP 服务
 
 ### Step 3
+
 全局安装 MCP server：
 
 ```bash
@@ -371,9 +399,11 @@ npm install -g smartclip-mcp
 ```
 
 ### Step 4
+
 在项目目录创建 `.mcp.json`
 
 ### Step 5
+
 全局安装 extension：
 
 ```bash
@@ -381,6 +411,7 @@ npm install -g smartclip-agent-extension
 ```
 
 ### Step 6
+
 在项目目录执行：
 
 ```bash

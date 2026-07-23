@@ -27,7 +27,12 @@ function extractRegisteredToolsFromSource(): string[] {
 const registeredMcpTools = extractRegisteredToolsFromSource()
 
 // Actions that are intentionally extension-only and NOT exposed via MCP.
-const extensionOnlyActions: BridgeAction[] = []
+// These are internal steps invoked by clip_page on the extension side.
+const extensionOnlyActions: BridgeAction[] = [
+  'extract-page' as BridgeAction,
+  'convert-to-markdown' as BridgeAction,
+  'get-tasks' as BridgeAction,
+]
 
 // Convert kebab-case tool name → BridgeAction value
 function toolToAction(toolName: string): string {
@@ -73,7 +78,6 @@ describe('bridge protocol ↔ MCP tool contract', () => {
       toolToAction('get_status'),
       toolToAction('get_daily_tasks'),
       toolToAction('list_tabs'),
-      toolToAction('extract_page'),
       toolToAction('save_clip'),
     ]
 

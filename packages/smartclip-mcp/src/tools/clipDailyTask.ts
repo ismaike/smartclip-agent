@@ -3,17 +3,17 @@ import { z } from 'zod'
 import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const clipDailyTaskSchema = {
-  taskId: z.string().describe('每日任务 ID（通过 get_daily_tasks 获取）'),
+  taskId: z.string().describe('每日任务ID（通过 get_daily_tasks 获取）'),
   destination: destinationSchema
     .optional()
-    .describe('保存目标平台。不提供则使用用户配置的默认平台。'),
+    .describe('保存目标，默认用用户配置'),
   mode: z.enum(['full', 'selection']).default('full')
-    .describe('提取模式：full 提取整个页面，selection 仅提取选中内容'),
+    .describe('full=全页, selection=选区'),
   closeTab: z.boolean().default(true)
-    .describe('剪藏完成后是否关闭自动打开的标签页'),
+    .describe('完成后是否关闭标签页'),
 }
 
-export const clipDailyTaskDescription = '处理一个每日待剪藏任务：自动打开任务对应的网页，提取内容并保存到笔记平台，然后标记任务为已完成。'
+export const clipDailyTaskDescription = '剪藏单个每日任务。'
 
 export async function clipDailyTask(bridge: WebSocketBridge, args: {
   taskId: string
@@ -36,24 +36,12 @@ export async function clipDailyTask(bridge: WebSocketBridge, args: {
   }
 
   const info = response.data || {}
-  let text = `每日任务剪藏成功！`
-  text += `\n标题: ${info.title || '(无标题)'}`
-  text += `\nURL: ${info.url || '(无URL)'}`
-
-  if (response.taskId)
-    text += `\n剪藏任务 ID: ${response.taskId}`
-  if (response.warning)
-    text += `\n警告: ${response.warning}`
-
-  if (response.markdown) {
-    const preview = response.markdown.length > 500
-      ? `${response.markdown.substring(0, 500)}...`
-      : response.markdown
-    text += `\n\n=== Markdown 预览 ===\n${preview}`
-  }
+  const dest = args.destination ? ` → ${args.destination}` : ''
+  const taskId = response.taskId ? ` (task:${response.taskId})` : ''
+  const warning = response.warning ? ` ⚠ ${response.warning}` : ''
 
   return {
-    content: [{ type: 'text' as const, text }],
+    content: [{ type: 'text' as const, text: `任务完成: ${info.title || '(无标题)'}${dest}${taskId}${warning}` }],
     structuredContent: {
       taskId: args.taskId,
       title: info.title || null,

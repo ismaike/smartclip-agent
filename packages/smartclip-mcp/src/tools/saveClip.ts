@@ -3,18 +3,23 @@ import { z } from 'zod'
 import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const saveClipSchema = {
-  url: z.string().describe('页面 URL'),
-  title: z.string().optional().describe('页面标题'),
-  contentHtml: z.string().optional().describe('HTML 内容'),
-  contentMarkdown: z.string().optional().describe('Markdown 内容（如已转换）'),
-  excerpt: z.string().optional().describe('页面摘要'),
-  tags: z.array(z.string()).optional().describe('标签列表'),
+  url: z.string().describe('页面URL'),
+  title: z.string().optional().describe('标题'),
+  contentHtml: z.string().optional().describe('HTML内容'),
+  contentMarkdown: z.string().optional().describe('Markdown内容'),
+  excerpt: z.string().optional().describe('摘要'),
+  tags: z.array(z.string()).optional().describe('标签'),
   author: z.string().optional().describe('作者'),
   destination: destinationSchema
     .describe('保存目标平台'),
 }
 
-export const saveClipDescription = '将剪藏内容保存到指定的笔记平台（Notion、Obsidian、Flomo、Joplin、思源笔记、飞书等）。需要提供内容和目标平台。'
+export const saveClipDescription = '保存内容到笔记平台。'
+
+export const saveClipAnnotations = {
+  destructiveHint: false,
+  idempotentHint: true,
+} as const
 
 export async function saveClip(bridge: WebSocketBridge, args: {
   url: string
@@ -59,14 +64,11 @@ export async function saveClip(bridge: WebSocketBridge, args: {
     }
   }
 
-  let text = `剪藏已成功保存到 ${args.destination}`
-  if (response.taskId)
-    text += `\n任务 ID: ${response.taskId}`
-  if (response.warning)
-    text += `\n警告: ${response.warning}`
+  const taskId = response.taskId ? ` (task:${response.taskId})` : ''
+  const warning = response.warning ? ` ⚠ ${response.warning}` : ''
 
   return {
-    content: [{ type: 'text' as const, text }],
+    content: [{ type: 'text' as const, text: `已保存到 ${args.destination}${taskId}${warning}` }],
     structuredContent: {
       saved: true,
       destination: args.destination,

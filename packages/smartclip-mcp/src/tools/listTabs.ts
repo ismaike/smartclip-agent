@@ -2,7 +2,12 @@ import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const listTabsSchema = {}
 
-export const listTabsDescription = '列出当前 Chrome 浏览器中打开的所有标签页，返回每个标签页的 ID、URL、标题等信息。用于确定要剪藏的目标页面。'
+export const listTabsDescription = '列出浏览器所有标签页。'
+
+export const listTabsAnnotations = {
+  readOnlyHint: true,
+  idempotentHint: true,
+} as const
 
 export async function listTabs(bridge: WebSocketBridge) {
   const response = await bridge.send('list-tabs')
@@ -23,8 +28,8 @@ export async function listTabs(bridge: WebSocketBridge) {
     content: [{
       type: 'text' as const,
       text: tabs.length > 0
-        ? `找到 ${tabs.length} 个标签页:\n\n${tabList}`
-        : '没有找到打开的标签页',
+        ? `${tabs.length} 个标签页:\n\n${tabList}`
+        : '没有打开的标签页',
     }],
     structuredContent: {
       tabs,

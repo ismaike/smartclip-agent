@@ -5,14 +5,14 @@ import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 export const clipAllDailyTasksSchema = {
   destination: destinationSchema
     .optional()
-    .describe('保存目标平台。不提供则使用用户配置的默认平台。'),
+    .describe('保存目标，默认用用户配置'),
   mode: z.enum(['full', 'selection']).default('full')
-    .describe('提取模式：full 提取整个页面，selection 仅提取选中内容'),
+    .describe('full=全页, selection=选区'),
   closeTab: z.boolean().default(true)
-    .describe('每个任务剪藏完成后是否关闭自动打开的标签页'),
+    .describe('完成后是否关闭标签页'),
 }
 
-export const clipAllDailyTasksDescription = '批量处理所有待办（pending）的每日剪藏任务：依次自动打开每个任务的网页，提取内容并保存到笔记平台。返回处理汇总。'
+export const clipAllDailyTasksDescription = '批量剪藏所有待办每日任务。'
 
 export async function clipAllDailyTasks(bridge: WebSocketBridge, args: {
   destination?: string
@@ -40,20 +40,16 @@ export async function clipAllDailyTasks(bridge: WebSocketBridge, args: {
     }
   }
 
-  let text = `批量剪藏完成！共 ${total} 个任务，成功 ${succeeded} 个，失败 ${failed} 个。\n`
-
   const resultList = (results as any[]).map((r: any) => {
     const emoji = r.success ? '✅' : '❌'
     let line = `${emoji} ${r.title || '(无标题)'} - ${r.url}`
     if (r.error)
-      line += `\n   错误: ${r.error}`
+      line += ` | ${r.error}`
     return line
   }).join('\n')
 
-  text += `\n${resultList}`
-
   return {
-    content: [{ type: 'text' as const, text }],
+    content: [{ type: 'text' as const, text: `批量完成: ${succeeded}/${total} 成功, ${failed} 失败\n${resultList}` }],
     structuredContent: {
       summary: { total, succeeded, failed },
       results,
