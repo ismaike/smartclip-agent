@@ -1,5 +1,5 @@
 {
   "packages/smartclip-bridge-protocol": "1.6.0",
-  "packages/smartclip-mcp": "1.6.0",
+  "packages/smartclip-mcp": "1.6.1",
   "packages/smartclip-agent-extension": "1.6.0"
 }
