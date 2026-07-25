@@ -10,7 +10,8 @@
   "scripts": {
     "postinstall": "node install.js",
     "install-skills": "node install.js",
-    "doctor": "node bin/doctor.js --json"
+    "doctor": "node bin/doctor.js --json",
+    "test": "node --test"
   },
   "dependencies": {},
   "devDependencies": {},

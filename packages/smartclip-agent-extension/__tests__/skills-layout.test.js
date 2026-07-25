@@ -3,14 +3,10 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 
+const { SKILL_NAMES: skillNames } = require('../lib/installTopology.js')
+
 const root = path.join(__dirname, '..')
 const skillsDir = path.join(root, 'skills')
-const skillNames = [
-  'smartclip-read',
-  'smartclip-save',
-  'smartclip-daily',
-  'smartclip-troubleshooting',
-]
 
 test('scenario-based skill files exist with frontmatter', () => {
   for (const name of skillNames) {

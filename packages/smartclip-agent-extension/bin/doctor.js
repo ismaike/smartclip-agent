@@ -3,6 +3,11 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const { spawn } = require('node:child_process')
+const {
+  SKILL_NAMES,
+  AVAILABLE_TARGETS,
+  checkDeployment,
+} = require('../lib/installTopology.js')
 
 function readJsonIfExists(file) {
   if (!fs.existsSync(file))
@@ -27,18 +32,12 @@ async function defaultExec(command, args, options = {}) {
   })
 }
 
-async function runDoctor({ cwd = process.cwd(), checkHealth = true, execCommand = defaultExec } = {}) {
+async function runDoctor({ cwd = process.cwd(), home = require('node:os').homedir(), checkHealth = true, execCommand = defaultExec } = {}) {
   const rootMcp = path.join(cwd, '.mcp.json')
   const mcpJson = readJsonIfExists(rootMcp)
   const smartclipConfig = mcpJson?.mcpServers?.smartclip
 
-  const skills = [
-    'smartclip-read',
-    'smartclip-save',
-    'smartclip-daily',
-    'smartclip-troubleshooting',
-  ]
-  const skillsInstalled = skills.every(skill => fs.existsSync(path.join(__dirname, '..', 'skills', skill, 'SKILL.md')))
+  const skillsInstalled = SKILL_NAMES.every(skill => fs.existsSync(path.join(__dirname, '..', 'skills', skill, 'SKILL.md')))
 
   const checks = []
   checks.push({
@@ -75,23 +74,27 @@ async function runDoctor({ cwd = process.cwd(), checkHealth = true, execCommand 
     detail: skillsInstalled ? 'all bundled skill files present' : 'missing bundled skill files',
   })
 
-  // Check whether skills were correctly installed to target directories
-  const installTargets = [
-    path.join(cwd, '.agents', 'skills'),
-    path.join(cwd, '.claude', 'skills'),
-    path.join(cwd, '.gemini', 'skills'),
-  ]
-  const installedTargets = installTargets.filter(dir => fs.existsSync(dir))
-  const targetSkillsOk = installedTargets.length === 0 || installedTargets.every(dir =>
-    skills.every(skill => fs.existsSync(path.join(dir, skill, 'SKILL.md')))
-  )
+  // 检查 global + project 双 scope 的 skills 部署状态
+  const globalDeployment = checkDeployment({ scope: 'global', env: { home }, exists: fs.existsSync })
+  const projectDeployment = checkDeployment({ scope: 'project', env: { cwd }, exists: fs.existsSync })
+
+  const allDeployments = [globalDeployment, projectDeployment]
+  const anyInstalled = allDeployments.some(d => d.foundTargets.length > 0)
+  const allComplete = allDeployments
+    .filter(d => d.foundTargets.length > 0)
+    .every(d => d.allSkillsPresent)
+
+  const deployedLocations = allDeployments
+    .filter(d => d.foundTargets.length > 0)
+    .flatMap(d => d.foundTargets.map(t => `${d.scope}:${path.relative(d.scope === 'global' ? home : cwd, t)}`))
+
   checks.push({
     name: 'skills-deployed',
-    ok: targetSkillsOk,
-    detail: installedTargets.length === 0
+    ok: anyInstalled && allComplete,
+    detail: !anyInstalled
       ? 'no agent skill directories found (run smartclip-agent-extension to install)'
-      : targetSkillsOk
-        ? `skills deployed to ${installedTargets.map(d => path.relative(cwd, d)).join(', ')}`
+      : allComplete
+        ? `skills deployed to ${deployedLocations.join(', ')}`
         : 'some skill directories are missing installed skill files',
   })
 
@@ -102,6 +105,35 @@ async function runDoctor({ cwd = process.cwd(), checkHealth = true, execCommand 
   }
 }
 
+/**
+ * 生成面向 SessionStart hook 的会话提示。
+ * 由 doctor 持有诊断语义——hook 只做纯传递。
+ */
+function formatSessionContext(result) {
+  if (result.ok) {
+    return '<hook_context>SmartClip doctor reports the local MCP setup looks healthy. You can use SmartClip tools when needed.</hook_context>'
+  }
+
+  // 按失败类型给出具体提示
+  const failedChecks = result.checks.filter(c => !c.ok)
+  const hasMcpConfig = failedChecks.some(c => c.name === 'mcp-config')
+  const hasServer = failedChecks.some(c => c.name === 'mcp-server-installed')
+  const hasHealth = failedChecks.some(c => c.name === 'smartclip-health')
+  const hasDeployed = failedChecks.some(c => c.name === 'skills-deployed')
+
+  if (hasMcpConfig || hasServer) {
+    return '<hook_context>SmartClip doctor found setup issues. If SmartClip is needed, verify .mcp.json configuration and ensure smartclip-mcp is installed.</hook_context>'
+  }
+  if (hasHealth) {
+    return '<hook_context>SmartClip doctor found connection issues. If SmartClip is needed, ensure the browser extension is installed, MCP service is enabled in SmartClip settings, and the extension is connected.</hook_context>'
+  }
+  if (hasDeployed) {
+    return '<hook_context>SmartClip doctor found skill deployment issues. If SmartClip is needed, run smartclip-agent-extension to install skills.</hook_context>'
+  }
+
+  return '<hook_context>SmartClip doctor found setup or connection issues. If SmartClip is needed, verify installation and MCP setup.</hook_context>'
+}
+
 function formatHuman(result) {
   const lines = [result.ok ? '✅ SmartClip doctor passed' : '❌ SmartClip doctor found issues']
   for (const check of result.checks)
@@ -109,18 +141,34 @@ function formatHuman(result) {
   return lines.join('\n')
 }
 
-async function main() {
-  const json = process.argv.includes('--json')
-  const noHealth = process.argv.includes('--no-health')
-  const result = await runDoctor({ checkHealth: !noHealth })
-  if (json)
+/**
+ * CLI 入口。返回退出码而非直接 process.exit，便于测试。
+ *
+ * --session-context 模式恒返回 0：会话提示消息本身已区分健康与否，
+ * 退出码只用于表达 doctor 自身能否运行（崩溃时由 hook 的 || 兜底）。
+ * 否则不健康结果会同时触发 doctor 的具体提示和 shell 的笼统兜底，
+ * hook 将收到两段矛盾的 hook_context。
+ */
+async function main(argv = process.argv, run = runDoctor) {
+  const json = argv.includes('--json')
+  const noHealth = argv.includes('--no-health')
+  const sessionContext = argv.includes('--session-context')
+  const result = await run({ checkHealth: !noHealth })
+
+  if (sessionContext) {
+    console.log(formatSessionContext(result))
+    return 0
+  }
+  if (json) {
     console.log(JSON.stringify(result, null, 2))
-  else
+  }
+  else {
     console.log(formatHuman(result))
-  process.exit(result.ok ? 0 : 1)
+  }
+  return result.ok ? 0 : 1
 }
 
 if (require.main === module)
-  main()
+  main().then(code => process.exit(code))
 
-module.exports = { runDoctor, formatHuman }
+module.exports = { runDoctor, formatHuman, formatSessionContext, main }

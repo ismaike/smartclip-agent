@@ -3,22 +3,17 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
-const os = require('os');
+const {
+  SKILL_NAMES: skillNames,
+  AVAILABLE_TARGETS,
+  DEFAULT_TARGET,
+  ALL_TARGET_DIRS,
+  createInstallPlan,
+  createUninstallPlan,
+  resolveBasePath,
+} = require('./lib/installTopology.js');
 
-const AVAILABLE_TARGETS = [
-  { name: 'Standard (.agents/skills)', dir: '.agents/skills', description: '推荐 - 标准通用目录' },
-  { name: 'Claude Code (.claude/skills)', dir: '.claude/skills', description: 'Claude Code 客户端' },
-  { name: 'Gemini CLI (.gemini/skills)', dir: '.gemini/skills', description: 'Gemini CLI 客户端' },
-];
-
-const skillNames = [
-  'smartclip-read',
-  'smartclip-save',
-  'smartclip-daily',
-  'smartclip-troubleshooting'
-];
-
-const userHome = os.homedir();
+const userHome = require('os').homedir();
 const projectRoot = process.cwd();
 
 function parseArgs() {
@@ -59,10 +54,10 @@ function parseArgs() {
       options.scope = 'project';
       options.nonInteractive = true;
     } else if (arg === '--all' || arg === '-a') {
-      options.targets = AVAILABLE_TARGETS.map(t => t.dir);
+      options.targets = ALL_TARGET_DIRS;
       options.nonInteractive = true;
     } else if (arg === '--default' || arg === '-d') {
-      options.targets = ['.agents/skills'];
+      options.targets = [DEFAULT_TARGET];
       options.nonInteractive = true;
     }
   }
@@ -205,11 +200,11 @@ async function selectTargets(command) {
   }
   
   if (input === 'a' || input === 'all') {
-    return AVAILABLE_TARGETS.map(t => t.dir);
+    return ALL_TARGET_DIRS;
   }
   
   if (!input) {
-    return ['.agents/skills'];
+    return [DEFAULT_TARGET];
   }
   
   const indices = input.split(/[,，\s]+/).map(s => parseInt(s.trim()) - 1);
@@ -217,54 +212,55 @@ async function selectTargets(command) {
   
   if (validIndices.length === 0) {
     console.log('\n⚠️  无效选择，使用默认目录 .agents/skills');
-    return ['.agents/skills'];
+    return [DEFAULT_TARGET];
   }
   
   return validIndices.map(i => AVAILABLE_TARGETS[i].dir);
 }
 
 function installSkills(targetDirs, scope, isUpgrade = false) {
-  const basePath = scope === 'global' ? userHome : projectRoot;
+  const basePath = resolveBasePath(scope, { home: userHome, cwd: projectRoot });
   const scopeLabel = scope === 'global' ? '全局' : '项目';
   const actionLabel = isUpgrade ? '升级' : '安装';
   
   console.log(`\n📦 开始${scopeLabel}${actionLabel} SmartClip Skills...\n`);
   console.log(`   ${actionLabel}位置: ${basePath}\n`);
   
+  const plan = createInstallPlan({ scope, targets: targetDirs, packageRoot: __dirname, env: { home: userHome, cwd: projectRoot } });
+  
+  // 按目标目录分组执行
+  const dirs = [...new Set(plan.map(p => p.targetDir))];
   let installedCount = 0;
   let failedCount = 0;
   let upgradedCount = 0;
 
-  targetDirs.forEach(dir => {
-    const targetPath = path.join(basePath, dir);
-    const isExisting = fs.existsSync(targetPath);
+  dirs.forEach(dir => {
+    const dirPlan = plan.filter(p => p.targetDir === dir);
+    const isExisting = fs.existsSync(dir);
     
     try {
-      fs.mkdirSync(targetPath, { recursive: true });
+      fs.mkdirSync(dir, { recursive: true });
       
-      for (const skillName of skillNames) {
-        const skillTargetPath = path.join(targetPath, skillName);
-        const sourceFile = path.join(__dirname, 'skills', skillName, 'SKILL.md');
-        const targetFile = path.join(skillTargetPath, 'SKILL.md');
-        
-        if (!fs.existsSync(sourceFile)) {
-          console.log(`  ⚠️  源文件不存在: ${skillName}`);
+      for (const entry of dirPlan) {
+        if (!fs.existsSync(entry.sourceFile)) {
+          console.log(`  ⚠️  源文件不存在: ${entry.skillName}`);
           continue;
         }
         
-        if (fs.existsSync(targetFile)) {
+        const skillTargetDir = path.dirname(entry.targetFile);
+        if (fs.existsSync(entry.targetFile)) {
           upgradedCount++;
         }
         
-        fs.mkdirSync(skillTargetPath, { recursive: true });
-        fs.copyFileSync(sourceFile, targetFile);
+        fs.mkdirSync(skillTargetDir, { recursive: true });
+        fs.copyFileSync(entry.sourceFile, entry.targetFile);
       }
       
       const statusLabel = isExisting ? '已升级' : '已安装';
-      console.log(`  ✅ ${statusLabel}: ${dir}`);
+      console.log(`  ✅ ${statusLabel}: ${path.relative(basePath, dir)}`);
       installedCount++;
     } catch (err) {
-      console.log(`  ❌ ${actionLabel}失败: ${dir} - ${err.message}`);
+      console.log(`  ❌ ${actionLabel}失败: ${path.relative(basePath, dir)} - ${err.message}`);
       failedCount++;
     }
   });
@@ -289,46 +285,47 @@ function installSkills(targetDirs, scope, isUpgrade = false) {
 }
 
 function uninstallSkills(targetDirs, scope) {
-  const basePath = scope === 'global' ? userHome : projectRoot;
+  const basePath = resolveBasePath(scope, { home: userHome, cwd: projectRoot });
   const scopeLabel = scope === 'global' ? '全局' : '项目';
   
   console.log(`\n🗑️  开始${scopeLabel}卸载 SmartClip Skills...\n`);
   console.log(`   卸载位置: ${basePath}\n`);
   
+  const plan = createUninstallPlan({ scope, targets: targetDirs, env: { home: userHome, cwd: projectRoot } });
+  
+  // 按目标目录分组执行
+  const dirs = [...new Set(plan.map(p => p.targetDir))];
   let removedCount = 0;
   let failedCount = 0;
   let notFoundCount = 0;
 
-  targetDirs.forEach(dir => {
-    const targetPath = path.join(basePath, dir);
-    
-    if (!fs.existsSync(targetPath)) {
-      console.log(`  ⚠️  目录不存在: ${dir}`);
+  dirs.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      console.log(`  ⚠️  目录不存在: ${path.relative(basePath, dir)}`);
       notFoundCount++;
       return;
     }
     
+    const dirPlan = plan.filter(p => p.targetDir === dir);
     let removedSkills = 0;
     
     try {
-      for (const skillName of skillNames) {
-        const skillTargetPath = path.join(targetPath, skillName);
-        
-        if (fs.existsSync(skillTargetPath)) {
-          fs.rmSync(skillTargetPath, { recursive: true, force: true });
+      for (const entry of dirPlan) {
+        if (fs.existsSync(entry.skillPath)) {
+          fs.rmSync(entry.skillPath, { recursive: true, force: true });
           removedSkills++;
         }
       }
       
       if (removedSkills > 0) {
-        console.log(`  ✅ 已卸载: ${dir} (${removedSkills} 个技能)`);
+        console.log(`  ✅ 已卸载: ${path.relative(basePath, dir)} (${removedSkills} 个技能)`);
         removedCount++;
       } else {
-        console.log(`  ℹ️  未找到技能: ${dir}`);
+        console.log(`  ℹ️  未找到技能: ${path.relative(basePath, dir)}`);
         notFoundCount++;
       }
     } catch (err) {
-      console.log(`  ❌ 卸载失败: ${dir} - ${err.message}`);
+      console.log(`  ❌ 卸载失败: ${path.relative(basePath, dir)} - ${err.message}`);
       failedCount++;
     }
   });
@@ -367,12 +364,12 @@ async function main() {
       scope = 'global';
     }
     if (!targetDirs) {
-      targetDirs = ['.agents/skills'];
+      targetDirs = [DEFAULT_TARGET];
     }
   } else if (process.env.CI || !process.stdin.isTTY) {
     console.log('🔍 检测到非交互环境，使用默认全局安装到 .agents/skills');
     scope = 'global';
-    targetDirs = ['.agents/skills'];
+    targetDirs = [DEFAULT_TARGET];
   } else {
     scope = await selectScope(command);
     targetDirs = await selectTargets(command);
