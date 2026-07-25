@@ -34,7 +34,7 @@
 ### 如果你是维护者 / 发布者
 请先看：
 
-- [`docs/build-and-release.md`](docs/build-and-release.md)
+- [`RELEASE.md`](RELEASE.md)
 
 这份文档按步骤说明：
 - monorepo 结构
@@ -212,7 +212,7 @@ pnpm --filter smartclip-mcp test
 ```
 
 发布相关请查看：
-- [`docs/build-and-release.md`](docs/build-and-release.md)
+- [`RELEASE.md`](RELEASE.md)
 
 ## 更多说明
 
