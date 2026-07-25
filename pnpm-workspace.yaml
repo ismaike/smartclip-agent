@@ -1,2 +1,6 @@
 packages:
   - "packages/*"
+# pnpm 构建脚本审批：esbuild 的平台二进制由 optionalDependencies 提供，
+# 无需运行其 postinstall；显式拒绝以避免 ignored-builds 告警阻断 pnpm test。
+allowBuilds:
+  esbuild: false
