@@ -8,7 +8,7 @@
 
 | 包名 | 目录 | 作用 |
 |---|---|---|
-| `smartclip-bridge-protocol` | `packages/smartclip-bridge-protocol` | MCP WebSocket 桥接协议的共享类型、schema、错误码 |
+| `smartclip-bridge-protocol` | `packages/smartclip-bridge-protocol` | MCP WebSocket 桥接协议的共享类型、schema、错误码、Bridge Action 契约（输入/归一化结果校验与归一化逻辑） |
 | `smartclip-mcp` | `packages/smartclip-mcp` | MCP stdio server，负责与 AI 客户端通信，并启动本地 WebSocket server |
 | `smartclip-agent-extension` | `packages/smartclip-agent-extension` | 安装 skills / hooks / doctor CLI 的辅助包 |
 

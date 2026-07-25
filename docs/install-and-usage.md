@@ -134,13 +134,13 @@ smartclip-agent-extension
 ```
 🚀 SmartClip Agent Skills 安装向导
 
-请选择安装范围:
+请选择范围:
 
-  [1] 全局安装 - 安装到用户主目录 (推荐)
+  [1] 全局 - 用户主目录
       Mac/Linux: ~/.agents/skills 等
       Windows:   %USERPROFILE%\.agents\skills 等
 
-  [2] 项目安装 - 安装到当前项目目录
+  [2] 项目 - 当前项目目录
       当前目录: /path/to/your/project
 
   [q] 退出
@@ -160,7 +160,7 @@ smartclip-agent-extension
   [3] Gemini CLI (.gemini/skills)
       Gemini CLI 客户端
 
-  [a] 全部安装
+  [a] 全部
   [q] 退出
 
 请选择 (默认: 1):
@@ -209,6 +209,23 @@ smartclip-agent-extension --global --targets .agents/skills,.claude/skills
 - `smartclip-daily`
 - `smartclip-troubleshooting`
 
+### 补充：卸载与升级
+
+除了安装，`smartclip-agent-extension` 还支持卸载和升级：
+
+```bash
+# 卸载全局 Skills
+smartclip-agent-extension uninstall --global
+
+# 卸载所有
+smartclip-agent-extension uninstall --all
+
+# 升级全局 Skills（覆盖安装）
+smartclip-agent-extension upgrade --global
+```
+
+升级等同于先卸载再安装，适合更新到最新版本的技能文件。运行 `smartclip-agent-extension --help` 可查看完整参数列表。
+
 ## 7. 运行 doctor 检查
 
 安装后建议执行：
@@ -226,8 +243,10 @@ smartclip-agent-doctor --json
 doctor 主要检查：
 
 - `.mcp.json` 是否存在 `smartclip` 配置
-- `smartclip-mcp` 是否可执行
-- SmartClip 相关 skills 是否已部署到可识别目录
+- `smartclip-mcp` 是否可执行（`npx -y smartclip-mcp --help`）
+- SmartClip 扩展连接是否健康（`--healthcheck`）
+- 打包的 skill 源文件是否完整
+- skills 是否已部署到 global + project 双 scope 的 agent 目录
 
 ## 8. 使用限制与连接模型
 

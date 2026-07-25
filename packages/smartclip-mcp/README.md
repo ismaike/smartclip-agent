@@ -73,19 +73,20 @@ smartclip-agent-extension
 
 ## 可用工具
 
+以下 8 个工具注册在 MCP 工具注册表中，直接暴露给 AI 客户端：
+
 | 工具 | 说明 | 结构化输出字段 |
 |------|------|--------------|
 | `list_tabs` | 列出 Chrome 中所有打开的标签页 | `{ tabs, count }` |
-| `extract_page` | 提取指定标签页的网页内容 | `{ url, title, content }` |
-| `convert_to_markdown` | 将 HTML 转换为 Markdown | `{ markdown }` |
-| `save_clip` | 保存剪藏到指定平台 | `{ saved, destination, clip }` |
-| `clip_page` | 一键剪藏（提取 + 转换 + 保存） | `{ url, title, markdown, saved, destination }` |
-| `get_tasks` | 查看剪藏任务状态 | `{ tasks, count }` |
+| `save_clip` | 保存剪藏到指定平台 | `{ saved, destination, taskId, warning }` |
+| `clip_page` | 一键剪藏（提取 + 转换 + 保存） | `{ url, title, markdown, saved, destination, taskId, warning, createdTabId }` |
 | `get_daily_tasks` | 查看每日待剪藏任务池 | `{ tasks, count, lastSyncAt }` |
-| `clip_daily_task` | 自动打开并剪藏单个每日任务 | `{ taskId, saved }` |
+| `clip_daily_task` | 自动打开并剪藏单个每日任务 | `{ taskId, title, url, saved, clipTaskId, warning, markdown }` |
 | `clip_all_daily_tasks` | 批量处理所有待办每日任务 | `{ summary: { total, succeeded, failed }, results }` |
-| `get_vocabulary` | 获取用户自定义词汇表 | `{ vocabulary }` |
+| `get_vocabulary` | 获取用户自定义词汇表 | `{ words, count, enabled }` |
 | `get_status` | 获取 MCP 连接健康状态 | `{ status }` |
+
+> `extract_page`、`convert_to_markdown`、`get_tasks` 是扩展内部 Bridge Action，不单独注册为 MCP 工具。
 
 ## 使用示例
 
@@ -102,13 +103,26 @@ smartclip-agent-extension
 
 ## 支持的保存平台
 
-- Obsidian（通过 Local REST API）
-- Notion
-- Flomo
-- Joplin
-- 思源笔记
-- 飞书
-- Markdown 文件下载
+以下 16 种保存目标由协议包 `destinationSchema` 枚举统一定义，单一事实源：
+
+| Destination | 说明 |
+|---|---|
+| `obsidian` | Obsidian（通过 Local REST API） |
+| `notion` | Notion |
+| `markdown` | Markdown 文件下载 |
+| `flomo` | Flomo |
+| `siyuan` | 思源笔记 |
+| `logseq` | Logseq |
+| `joplin` | Joplin |
+| `feishu` | 飞书 |
+| `yuque` | 语雀 |
+| `memos` | Memos |
+| `wolai` | Wolai |
+| `getbiji` | GetBiji |
+| `flowus` | FlowUs |
+| `s3_doc` | S3 |
+| `aliyun_oss_doc` | 阿里云 OSS |
+| `tencent_cos_doc` | 腾讯云 COS |
 
 ## 故障排查
 
@@ -118,7 +132,7 @@ smartclip-agent-extension
 smartclip-agent-doctor
 ```
 
-这会检查 `.mcp.json` 配置、MCP server 安装和技能文件是否就位。
+这会检查 `.mcp.json` 配置、MCP server 可执行性、扩展连接健康以及 skill 文件是否已部署。
 
 ### "Chrome 扩展未连接"
 

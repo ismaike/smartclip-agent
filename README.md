@@ -13,7 +13,7 @@
 
 | 包名 | 目录 | 作用 |
 |---|---|---|
-| `smartclip-bridge-protocol` | `packages/smartclip-bridge-protocol` | 共享协议类型、错误码、schema |
+| `smartclip-bridge-protocol` | `packages/smartclip-bridge-protocol` | 共享协议类型、错误码、schema、Bridge Action 契约（输入/归一化结果校验与归一化逻辑） |
 | `smartclip-mcp` | `packages/smartclip-mcp` | MCP server（stdio）+ 本地 WebSocket bridge |
 | `smartclip-agent-extension` | `packages/smartclip-agent-extension` | skills、hooks、doctor CLI、安装脚本 |
 
@@ -144,19 +144,20 @@ smartclip-agent-doctor
 
 ## MCP 工具概览
 
+以下 8 个工具注册在 MCP 工具注册表中，直接暴露给 AI 客户端：
+
 | Tool | Description | Structured Output |
 |------|-------------|------------------|
-| `clip_page` | Read a page or save it to a destination | `{ url, title, markdown, saved, destination }` |
 | `list_tabs` | List open Chrome tabs | `{ tabs, count }` |
-| `extract_page` | Extract page content from a tab | structured output included |
-| `convert_to_markdown` | Convert HTML to Markdown | structured output included |
 | `save_clip` | Save generated content to a destination | `{ saved, destination, taskId, warning }` |
-| `get_tasks` | Inspect clip task queue | `{ tasks, count }` |
+| `clip_page` | Read a page or save it to a destination | `{ url, title, markdown, saved, destination, taskId, warning, createdTabId }` |
 | `get_daily_tasks` | Read daily task pool | `{ tasks, count, lastSyncAt }` |
-| `clip_daily_task` | Process one daily task | structured output included |
+| `clip_daily_task` | Process one daily task | `{ taskId, title, url, saved, clipTaskId, warning, markdown }` |
 | `clip_all_daily_tasks` | Process all pending daily tasks | `{ summary, results }` |
-| `get_vocabulary` | Read user vocabulary | structured output included |
+| `get_vocabulary` | Read user vocabulary | `{ words, count, enabled }` |
 | `get_status` | Read MCP / extension health | `{ status }` |
+
+> `extract_page`、`convert_to_markdown`、`get_tasks` 是扩展内部 Bridge Action，由 `clip_page` 等工具在内部调用，不单独注册为 MCP 工具。
 
 ## 安全与诊断
 
@@ -188,9 +189,10 @@ smartclip-agent-doctor
 
 doctor 会检查：
 - `.mcp.json` 是否配置 smartclip
-- `smartclip-mcp` 是否可执行
-- skills 源文件是否存在
-- skills 是否已经部署到支持的 agent 目录
+- `smartclip-mcp` 是否可执行（`--help`）
+- SmartClip 扩展连接是否健康（`--healthcheck`）
+- 打包的 skill 源文件是否完整
+- skills 是否已部署到 global + project 双 scope 的 agent 目录
 
 ## 开发者常用命令
 

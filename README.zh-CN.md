@@ -13,7 +13,7 @@
 
 | 包名 | 目录 | 作用 |
 |---|---|---|
-| `smartclip-bridge-protocol` | `packages/smartclip-bridge-protocol` | 共享桥接协议类型、错误码、schema |
+| `smartclip-bridge-protocol` | `packages/smartclip-bridge-protocol` | 共享桥接协议类型、错误码、schema、Bridge Action 契约（输入/归一化结果校验与归一化逻辑） |
 | `smartclip-mcp` | `packages/smartclip-mcp` | MCP server（stdio）+ 本地 WebSocket bridge |
 | `smartclip-agent-extension` | `packages/smartclip-agent-extension` | skills、hooks、doctor CLI、安装脚本 |
 
@@ -114,19 +114,20 @@ smartclip-agent-doctor
 
 ## MCP 工具概览
 
+以下 8 个工具注册在 MCP 工具注册表中，直接暴露给 AI 客户端：
+
 | 工具 | 说明 | 结构化输出 |
 |------|------|-----------|
-| `clip_page` | 读取网页或保存到目标平台 | `{ url, title, markdown, saved, destination }` |
 | `list_tabs` | 列出 Chrome 当前标签页 | `{ tabs, count }` |
-| `extract_page` | 从标签页提取页面内容 | 已支持 structured output |
-| `convert_to_markdown` | 把 HTML 转成 Markdown | 已支持 structured output |
 | `save_clip` | 把生成内容保存到指定平台 | `{ saved, destination, taskId, warning }` |
-| `get_tasks` | 查看剪藏任务队列 | `{ tasks, count }` |
+| `clip_page` | 读取网页或保存到目标平台 | `{ url, title, markdown, saved, destination, taskId, warning, createdTabId }` |
 | `get_daily_tasks` | 查看每日任务池 | `{ tasks, count, lastSyncAt }` |
-| `clip_daily_task` | 处理单个每日任务 | 已支持 structured output |
+| `clip_daily_task` | 处理单个每日任务 | `{ taskId, title, url, saved, clipTaskId, warning, markdown }` |
 | `clip_all_daily_tasks` | 处理全部待办每日任务 | `{ summary, results }` |
-| `get_vocabulary` | 查看生词本 | 已支持 structured output |
+| `get_vocabulary` | 查看生词本 | `{ words, count, enabled }` |
 | `get_status` | 查看 MCP / 扩展健康状态 | `{ status }` |
+
+> `extract_page`、`convert_to_markdown`、`get_tasks` 是扩展内部 Bridge Action，由 `clip_page` 等工具在内部调用，不单独注册为 MCP 工具。
 
 ## 安全与诊断
 
@@ -158,9 +159,10 @@ smartclip-agent-doctor
 
 doctor 会检查：
 - `.mcp.json` 中是否存在 smartclip 配置
-- `smartclip-mcp` 是否可执行
-- skills 源文件是否存在
-- skills 是否已经部署到支持的 agent 目录
+- `smartclip-mcp` 是否可执行（`--help`）
+- SmartClip 扩展连接是否健康（`--healthcheck`）
+- 打包的 skill 源文件是否完整
+- skills 是否已部署到 global + project 双 scope 的 agent 目录
 
 ## 开发者常用命令
 
