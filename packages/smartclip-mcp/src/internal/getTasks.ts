@@ -1,6 +1,6 @@
 import { BridgeAction } from 'smartclip-bridge-protocol'
+import type { BridgeInvoker } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
-import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const getTasksSchema = {
   status: z.enum(['queued', 'running', 'succeeded', 'failed', 'cancelled']).optional()
@@ -9,18 +9,10 @@ export const getTasksSchema = {
 
 export const getTasksDescription = '查看剪藏任务队列的状态。可以查看所有任务或按状态过滤（queued/running/succeeded/failed/cancelled）。'
 
-export async function getTasks(bridge: WebSocketBridge, args: { status?: string }) {
-  const response = await bridge.send(BridgeAction.GET_TASKS, { status: args.status })
+export async function getTasks(invoke: BridgeInvoker['invoke'], args: { status?: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled' }) {
+  const { tasks, count } = await invoke(BridgeAction.GET_TASKS, { status: args.status })
 
-  if (!response.success) {
-    return {
-      content: [{ type: 'text' as const, text: `获取任务列表失败: ${response.error}` }],
-      isError: true,
-    }
-  }
-
-  const tasks = (response.data || []) as any[]
-  if (tasks.length === 0) {
+  if (count === 0) {
     return {
       content: [{
         type: 'text' as const,
@@ -39,7 +31,7 @@ export async function getTasks(bridge: WebSocketBridge, args: { status?: string 
     cancelled: '🚫',
   }
 
-  const taskList = tasks.map((task: any) => {
+  const taskList = tasks.map((task) => {
     const emoji = statusEmoji[task.status] || '❓'
     const lines = [
       `${emoji} [${task.status}] ${task.clip?.title || '(无标题)'} → ${task.destination}`,
@@ -55,11 +47,11 @@ export async function getTasks(bridge: WebSocketBridge, args: { status?: string 
   return {
     content: [{
       type: 'text' as const,
-      text: `共 ${tasks.length} 个任务:\n\n${taskList}`,
+      text: `共 ${count} 个任务:\n\n${taskList}`,
     }],
     structuredContent: {
       tasks,
-      count: tasks.length,
+      count,
     },
   }
 }

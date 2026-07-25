@@ -3,16 +3,16 @@
  *
  * 在单个 Tool Descriptor 背后吸收：
  * - MCP 工具注册（server.tool）
- * - bridge 调用（send 辅助函数，失败自动抛异常）
+ * - bridge 调用（invoke，返回归一化结果，失败自动抛异常）
  * - 错误格式化（catch → errorLabel 前缀）
  * - MCP 结果形状包装（execute 返回 {text, structured}，defineTool 包成 MCP 结果）
  *
- * 工具只提供纯映射逻辑，永远不碰 MCP 结果形状。
+ * 工具只提供纯映射逻辑，永远不碰 MCP 结果形状或 Bridge envelope。
  */
 
 import type { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { BridgeAction, BridgeSuccess } from 'smartclip-bridge-protocol'
+import { createBridgeInvoker, type BridgeInvoker } from 'smartclip-bridge-protocol'
 import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 /** execute 的返回值——纯域结果，不含 MCP 形状 */
@@ -24,11 +24,11 @@ export interface ToolResult {
 /** defineTool 注入给 execute 的上下文 */
 export interface ToolContext {
   /**
-   * 发送 bridge action。
-   * 内部检查 response.success：失败时抛异常（由 defineTool catch 并格式化）。
-   * 成功时返回类型化的 BridgeSuccess。
+   * 调用 Bridge Action，返回归一化领域结果。
+   * 失败时抛 BridgeActionError 子类（由 registerTool catch 并格式化）。
+   * 永不返回 Bridge envelope。
    */
-  send: (action: BridgeAction, data?: unknown) => Promise<BridgeSuccess>
+  invoke: BridgeInvoker['invoke']
 }
 
 /** 一个 MCP 工具的完整描述 */
@@ -48,16 +48,14 @@ export interface ToolDescriptor {
 }
 
 /**
- * 从 WebSocketBridge 创建 send 辅助函数。
- * 失败时抛异常，成功时返回类型化响应。
+ * 从 WebSocketBridge 创建 ToolContext。
+ * 内部用 createBridgeInvoker 绑定 transport，invoke 返回归一化结果。
  */
-function createSend(bridge: WebSocketBridge): ToolContext['send'] {
-  return async (action, data) => {
-    const response = await bridge.send(action, data)
-    if (!response.success)
-      throw new Error(response.error ?? '未知错误')
-    return response
-  }
+export function createToolContext(bridge: WebSocketBridge): ToolContext {
+  const invoker = createBridgeInvoker({
+    send: (action, data) => bridge.send(action, data),
+  })
+  return { invoke: invoker.invoke }
 }
 
 /**
@@ -66,7 +64,7 @@ function createSend(bridge: WebSocketBridge): ToolContext['send'] {
  * 内部完成：MCP 注册 → 调用 execute → 包成 MCP 结果 → catch 异常格式化错误。
  */
 export function registerTool(server: McpServer, descriptor: ToolDescriptor, bridge: WebSocketBridge): void {
-  const send = createSend(bridge)
+  const ctx = createToolContext(bridge)
 
   server.tool(
     descriptor.name,
@@ -75,7 +73,7 @@ export function registerTool(server: McpServer, descriptor: ToolDescriptor, brid
     descriptor.annotations ?? {},
     async (args: any) => {
       try {
-        const result = await descriptor.execute(args, { send })
+        const result = await descriptor.execute(args, ctx)
         return {
           content: [{ type: 'text' as const, text: result.text }],
           structuredContent: result.structured,

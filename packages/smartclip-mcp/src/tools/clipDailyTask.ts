@@ -22,30 +22,29 @@ export default {
   errorLabel: '每日任务剪藏失败',
   async execute(args: {
     taskId: string
-    destination?: string
-    mode: string
+    destination?: z.infer<typeof destinationSchema>
+    mode: 'full' | 'selection'
     closeTab: boolean
-  }, { send }: ToolContext) {
-    const r = await send(BridgeAction.CLIP_DAILY_TASK, {
+  }, { invoke }: ToolContext) {
+    const r = await invoke(BridgeAction.CLIP_DAILY_TASK, {
       taskId: args.taskId,
       destination: args.destination,
       mode: args.mode,
       closeTab: args.closeTab,
     })
 
-    const info = (r as any).data || {}
     const dest = args.destination ? ` → ${args.destination}` : ''
-    const taskId = r.taskId ? ` (task:${r.taskId})` : ''
+    const taskIdText = r.clipTaskId ? ` (task:${r.clipTaskId})` : ''
     const warning = r.warning ? ` ⚠ ${r.warning}` : ''
 
     return {
-      text: `任务完成: ${info.title || '(无标题)'}${dest}${taskId}${warning}`,
+      text: `任务完成: ${r.title || '(无标题)'}${dest}${taskIdText}${warning}`,
       structured: {
         taskId: args.taskId,
-        title: info.title || null,
-        url: info.url || null,
+        title: r.title || null,
+        url: r.url || null,
         saved: true,
-        clipTaskId: r.taskId || null,
+        clipTaskId: r.clipTaskId || null,
         warning: r.warning || null,
         markdown: r.markdown || null,
       },

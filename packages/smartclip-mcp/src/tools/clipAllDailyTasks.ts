@@ -20,25 +20,23 @@ export default {
   },
   errorLabel: '批量剪藏失败',
   async execute(args: {
-    destination?: string
-    mode: string
+    destination?: z.infer<typeof destinationSchema>
+    mode: 'full' | 'selection'
     closeTab: boolean
-  }, { send }: ToolContext) {
-    const r = await send(BridgeAction.CLIP_ALL_DAILY_TASKS, {
+  }, { invoke }: ToolContext) {
+    const { summary, results } = await invoke(BridgeAction.CLIP_ALL_DAILY_TASKS, {
       destination: args.destination,
       mode: args.mode,
       closeTab: args.closeTab,
     })
 
-    const { total, succeeded, failed, results } = (r as any).data || { total: 0, succeeded: 0, failed: 0, results: [] }
-
-    if (total === 0) {
+    if (summary.total === 0) {
       return {
         text: '没有待处理的每日任务。',
       }
     }
 
-    const resultList = (results as any[]).map((row: any) => {
+    const resultList = results.map((row) => {
       const emoji = row.success ? '✅' : '❌'
       let line = `${emoji} ${row.title || '(无标题)'} - ${row.url}`
       if (row.error)
@@ -47,9 +45,9 @@ export default {
     }).join('\n')
 
     return {
-      text: `批量完成: ${succeeded}/${total} 成功, ${failed} 失败\n${resultList}`,
+      text: `批量完成: ${summary.succeeded}/${summary.total} 成功, ${summary.failed} 失败\n${resultList}`,
       structured: {
-        summary: { total, succeeded, failed },
+        summary,
         results,
       },
     }

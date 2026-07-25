@@ -1,6 +1,6 @@
 import { BridgeAction } from 'smartclip-bridge-protocol'
+import type { BridgeInvoker } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
-import type { WebSocketBridge } from '../bridge/websocketBridge.js'
 
 export const extractPageSchema = {
   tabId: z.number().describe('目标标签页 ID（通过 list_tabs 获取）。如不提供，将使用当前活动标签页。').optional(),
@@ -9,40 +9,26 @@ export const extractPageSchema = {
 
 export const extractPageDescription = '提取指定标签页的网页内容（HTML 和元数据）。返回页面标题、URL、正文 HTML、摘要等信息。这是剪藏流程的第一步。'
 
-export async function extractPage(bridge: WebSocketBridge, args: { tabId?: number, mode: string }) {
-  const data: any = { mode: args.mode }
+export async function extractPage(invoke: BridgeInvoker['invoke'], args: { tabId?: number, mode: 'full' | 'selection' }) {
+  let tabId = args.tabId
 
-  if (args.tabId) {
-    data.tabId = args.tabId
-  }
-  else {
+  if (!tabId) {
     // 获取当前活动标签页
-    const tabsResponse = await bridge.send(BridgeAction.LIST_TABS)
-    if (tabsResponse.success && tabsResponse.data) {
-      const activeTab = (tabsResponse.data as any[]).find(t => t.active)
-      if (activeTab) {
-        data.tabId = activeTab.id
-      }
-    }
+    const { tabs } = await invoke(BridgeAction.LIST_TABS)
+    const activeTab = tabs.find(t => t.active)
+    if (activeTab)
+      tabId = activeTab.id
   }
 
-  if (!data.tabId) {
+  if (!tabId) {
     return {
       content: [{ type: 'text' as const, text: '无法确定目标标签页。请提供 tabId 参数或确保浏览器中有活动标签页。' }],
       isError: true,
     }
   }
 
-  const response = await bridge.send(BridgeAction.EXTRACT_PAGE, data)
+  const clip = await invoke(BridgeAction.EXTRACT_PAGE, { tabId, mode: args.mode })
 
-  if (!response.success) {
-    return {
-      content: [{ type: 'text' as const, text: `内容提取失败: ${response.error}` }],
-      isError: true,
-    }
-  }
-
-  const clip = (response.data || {}) as any
   const summary = [
     `标题: ${clip.title || '(无标题)'}`,
     `URL: ${clip.url || '(无URL)'}`,

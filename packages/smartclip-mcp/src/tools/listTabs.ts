@@ -10,21 +10,18 @@ export default {
     idempotentHint: true,
   },
   errorLabel: '获取标签页列表失败',
-  async execute(_args: unknown, { send }: ToolContext) {
-    const r = await send(BridgeAction.LIST_TABS)
-    const tabs = (r.data || []) as any[]
-    const tabList = (tabs as any[]).map(tab =>
+  async execute(_args: unknown, { invoke }: ToolContext) {
+    const { tabs, count } = await invoke(BridgeAction.LIST_TABS)
+
+    const tabList = tabs.map(tab =>
       `[${tab.active ? '★' : ' '}] Tab ${tab.id}: ${tab.title}\n    URL: ${tab.url}`,
     ).join('\n\n')
 
     return {
-      text: tabs.length > 0
-        ? `${tabs.length} 个标签页:\n\n${tabList}`
+      text: count > 0
+        ? `${count} 个标签页:\n\n${tabList}`
         : '没有打开的标签页',
-      structured: {
-        tabs,
-        count: (tabs as any[]).length,
-      },
+      structured: { tabs, count },
     }
   },
 } satisfies ToolDescriptor

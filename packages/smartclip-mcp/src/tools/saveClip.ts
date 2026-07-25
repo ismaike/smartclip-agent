@@ -1,4 +1,5 @@
 import { BridgeAction, destinationSchema } from 'smartclip-bridge-protocol'
+import type { BridgeActionInput } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
 import type { ToolDescriptor, ToolContext } from './defineTool.js'
 
@@ -29,9 +30,10 @@ export default {
     excerpt?: string
     tags?: string[]
     author?: string
-    destination: string
-  }, { send }: ToolContext) {
-    const clip: Record<string, any> = {
+    destination: z.infer<typeof destinationSchema>
+  }, { invoke }: ToolContext) {
+    // 直接标注为 SAVE_CLIP 契约输入的 Clip Item 类型，不再依赖类型断言
+    const clip: BridgeActionInput<BridgeAction.SAVE_CLIP>['clip'] = {
       url: args.url,
       title: args.title,
       contentHtml: args.contentHtml,
@@ -45,25 +47,29 @@ export default {
     }
 
     if (args.tags || args.author) {
-      clip.meta = {}
+      const meta: Record<string, unknown> = {}
       if (args.tags)
-        clip.meta.tags = args.tags
+        meta.tags = args.tags
       if (args.author)
-        clip.meta.author = args.author
+        meta.author = args.author
+      clip.meta = meta
     }
 
-    const r = await send(BridgeAction.SAVE_CLIP, { clip, destination: args.destination })
+    const { taskId, warning } = await invoke(BridgeAction.SAVE_CLIP, {
+      clip,
+      destination: args.destination,
+    })
 
-    const taskId = r.taskId ? ` (task:${r.taskId})` : ''
-    const warning = r.warning ? ` ⚠ ${r.warning}` : ''
+    const taskIdText = taskId ? ` (task:${taskId})` : ''
+    const warningText = warning ? ` ⚠ ${warning}` : ''
 
     return {
-      text: `已保存到 ${args.destination}${taskId}${warning}`,
+      text: `已保存到 ${args.destination}${taskIdText}${warningText}`,
       structured: {
         saved: true,
         destination: args.destination,
-        taskId: r.taskId || null,
-        warning: r.warning || null,
+        taskId: taskId ?? null,
+        warning: warning ?? null,
       },
     }
   },

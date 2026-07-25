@@ -1,4 +1,4 @@
-import { BridgeErrorCode, bridgeStatusSchema, type BridgeStatus } from 'smartclip-bridge-protocol'
+import { BridgeErrorCode, type BridgeStatus } from 'smartclip-bridge-protocol'
 import { BridgeAction } from 'smartclip-bridge-protocol'
 import type { ToolDescriptor, ToolContext } from './defineTool.js'
 
@@ -47,15 +47,9 @@ export default {
     idempotentHint: true,
   },
   errorLabel: '获取状态失败',
-  async execute(_args: unknown, { send }: ToolContext) {
-    const r = await send(BridgeAction.GET_STATUS)
+  async execute(_args: unknown, { invoke }: ToolContext) {
+    const status = await invoke(BridgeAction.GET_STATUS)
 
-    const parseResult = bridgeStatusSchema.safeParse(r.data)
-    if (!parseResult.success) {
-      throw new Error(`状态数据格式无效: ${parseResult.error.message}`)
-    }
-
-    const status = parseResult.data
     return {
       text: renderStatusText(status),
       structured: { status },

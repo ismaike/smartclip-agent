@@ -14,11 +14,10 @@ export default {
     idempotentHint: true,
   },
   errorLabel: '获取每日任务失败',
-  async execute(args: { status?: string }, { send }: ToolContext) {
-    const r = await send(BridgeAction.GET_DAILY_TASKS, { status: args.status })
+  async execute(args: { status?: 'pending' | 'completed' | 'skipped' }, { invoke }: ToolContext) {
+    const { tasks, count, lastSyncAt } = await invoke(BridgeAction.GET_DAILY_TASKS, { status: args.status })
 
-    const tasks = (r.data || []) as any[]
-    if ((tasks as any[]).length === 0) {
+    if (count === 0) {
       return {
         text: args.status
           ? `没有状态为 "${args.status}" 的每日任务`
@@ -32,7 +31,7 @@ export default {
       skipped: '⏭️',
     }
 
-    const taskList = (tasks as any[]).map((task: any) => {
+    const taskList = tasks.map((task) => {
       const emoji = statusEmoji[task.status] || '❓'
       const lines = [
         `${emoji} [${task.status}] ${task.title || '(无标题)'}`,
@@ -47,11 +46,11 @@ export default {
     }).join('\n\n')
 
     return {
-      text: `共 ${(tasks as any[]).length} 个每日任务:\n\n${taskList}`,
+      text: `共 ${count} 个每日任务:\n\n${taskList}`,
       structured: {
         tasks,
-        count: (tasks as any[]).length,
-        lastSyncAt: r.lastSyncAt,
+        count,
+        lastSyncAt,
       },
     }
   },

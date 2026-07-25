@@ -22,10 +22,10 @@ export default {
   async execute(args: {
     tabId?: number
     url?: string
-    destination?: string
-    mode: string
-  }, { send }: ToolContext) {
-    const r = await send(BridgeAction.CLIP_PAGE, {
+    destination?: z.infer<typeof destinationSchema>
+    mode: 'full' | 'selection'
+  }, { invoke }: ToolContext) {
+    const r = await invoke(BridgeAction.CLIP_PAGE, {
       tabId: args.tabId,
       url: args.url,
       destination: args.destination,
@@ -42,15 +42,15 @@ export default {
     return {
       text: `${summary}${taskId}${warning}${mdInfo}`,
       structured: {
-        url: (r as any).clip?.url || args.url || '',
-        title: (r as any).clip?.title,
+        url: r.url || args.url || '',
+        title: r.title,
         markdown: r.markdown,
         saved: Boolean(args.destination),
         destination: args.destination,
         taskId: r.taskId,
         warning: r.warning,
         createdTabId: r.createdTabId,
-        clip: (r as any).clip,
+        clip: r.clip,
       },
     }
   },

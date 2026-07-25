@@ -18,20 +18,23 @@ const baseStatus = {
   reconnectAttempts: 0,
   nextReconnectAt: null,
   capabilities: { clipPage: true },
+  clientVersion: null,
+  lastCloseCode: null,
+  lastCloseReason: null,
 }
 
-/** mock send：返回预设的 get-status 响应 */
-function createSend(statusOverrides: Record<string, unknown> = {}): ToolContext['send'] {
-  return async (action) => {
+/** mock invoke：返回预设的归一化 get-status 结果 */
+function createInvoke(statusOverrides: Record<string, unknown> = {}): ToolContext['invoke'] {
+  return ((async (action: BridgeAction) => {
     expect(action).toBe(BridgeAction.GET_STATUS)
-    return { success: true, data: { ...baseStatus, ...statusOverrides } } as any
-  }
+    return { ...baseStatus, ...statusOverrides }
+  }) as ToolContext['invoke'])
 }
 
 describe('getStatus', () => {
   it('returns structured smartclip health data', async () => {
     const result = await getStatusTool.execute({}, {
-      send: createSend({
+      invoke: createInvoke({
         lastErrorCode: BridgeErrorCode.MCP_SERVER_UNAVAILABLE,
         lastErrorMessage: 'offline',
         reconnectAttempts: 3,
@@ -44,29 +47,13 @@ describe('getStatus', () => {
     expect(result.structured?.status.lastErrorCode).toBe(BridgeErrorCode.MCP_SERVER_UNAVAILABLE)
   })
 
-  it('renders legacy premium:true status as Pro (backward compat)', async () => {
-    const send: ToolContext['send'] = async () => ({
-      success: true,
-      data: {
-        serverListening: true,
-        extensionConnected: false,
-        socketConnected: true,
-        mcpEnabled: true,
-        premium: true,
-        protocolVersion: '1',
-        extensionVersion: '1.2.3',
-        lastErrorCode: null,
-        lastErrorMessage: null,
-        reconnectAttempts: 0,
-        nextReconnectAt: null,
-        capabilities: { clipPage: true },
-      },
-    } as any)
-
-    const result = await getStatusTool.execute({}, { send })
+  it('renders pro:true status as Pro', async () => {
+    const result = await getStatusTool.execute({}, {
+      invoke: createInvoke({ pro: true }),
+    })
 
     expect(result.structured?.status.pro).toBe(true)
-    expect(result.text).not.toContain('Premium')
+    expect(result.text).toContain('Pro')
   })
 
   describe('renderSuggestion', () => {
@@ -78,7 +65,7 @@ describe('getStatus', () => {
       [BridgeErrorCode.PREMIUM_REQUIRED, 'Pro'],
     ])('includes suggestion for %s', async (errorCode, expectedHint) => {
       const result = await getStatusTool.execute({}, {
-        send: createSend({ lastErrorCode: errorCode }),
+        invoke: createInvoke({ lastErrorCode: errorCode }),
       })
       expect(result.text).toContain('建议')
       expect(result.text).toContain(expectedHint)
@@ -86,7 +73,7 @@ describe('getStatus', () => {
 
     it('omits suggestion when no known error code', async () => {
       const result = await getStatusTool.execute({}, {
-        send: createSend({ lastErrorCode: null }),
+        invoke: createInvoke({ lastErrorCode: null }),
       })
       expect(result.text).not.toContain('建议')
     })
