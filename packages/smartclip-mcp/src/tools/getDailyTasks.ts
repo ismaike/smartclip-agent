@@ -1,4 +1,4 @@
-import { BridgeAction } from 'smartclip-bridge-protocol'
+import { BridgeAction, getDailyTasksResultSchema } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
 import type { ToolDescriptor, ToolContext } from './defineTool.js'
 
@@ -9,6 +9,7 @@ export default {
     status: z.enum(['pending', 'completed', 'skipped']).optional()
       .describe('按状态过滤'),
   },
+  outputSchema: getDailyTasksResultSchema,
   annotations: {
     readOnlyHint: true,
     idempotentHint: true,
@@ -22,6 +23,11 @@ export default {
         text: args.status
           ? `没有状态为 "${args.status}" 的每日任务`
           : '每日任务池为空',
+        structured: {
+          tasks: [],
+          count: 0,
+          lastSyncAt,
+        },
       }
     }
 

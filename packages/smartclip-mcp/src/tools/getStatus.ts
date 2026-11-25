@@ -1,6 +1,27 @@
-import { BridgeErrorCode, type BridgeStatus } from 'smartclip-bridge-protocol'
-import { BridgeAction } from 'smartclip-bridge-protocol'
+import { BridgeAction, BridgeErrorCode, type BridgeStatus } from 'smartclip-bridge-protocol'
+import { z } from 'zod'
 import type { ToolDescriptor, ToolContext } from './defineTool.js'
+
+const normalizedBridgeStatusSchema = z.object({
+  serverListening: z.boolean(),
+  extensionConnected: z.boolean(),
+  socketConnected: z.boolean().optional(),
+  handshakeAcknowledged: z.boolean().optional(),
+  connectionPhase: z.string().optional(),
+  mcpEnabled: z.boolean(),
+  pro: z.boolean(),
+  protocolVersion: z.string(),
+  extensionVersion: z.string().nullable(),
+  lastErrorCode: z.string().nullable(),
+  lastErrorMessage: z.string().nullable(),
+  reconnectAttempts: z.number(),
+  nextReconnectAt: z.number().nullable(),
+  lastCloseCode: z.number().nullable(),
+  lastCloseReason: z.string().nullable(),
+  capabilities: z.record(z.boolean()),
+  clientVersion: z.string().nullable(),
+  legacyMode: z.boolean().optional(),
+}).passthrough()
 
 function renderSuggestion(status: BridgeStatus): string | null {
   switch (status.lastErrorCode) {
@@ -42,6 +63,9 @@ export default {
   name: 'get_status',
   description: '获取MCP连接状态。',
   schema: {},
+  outputSchema: {
+    status: normalizedBridgeStatusSchema,
+  },
   annotations: {
     readOnlyHint: true,
     idempotentHint: true,

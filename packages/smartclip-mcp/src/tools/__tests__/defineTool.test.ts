@@ -2,19 +2,25 @@ import { describe, expect, it } from 'vitest'
 import { BridgeAction } from 'smartclip-bridge-protocol'
 import type { BridgeResponse } from 'smartclip-bridge-protocol'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { z } from 'zod'
 import type { WebSocketBridge } from '../../bridge/websocketBridge.js'
 import { registerTool, type ToolDescriptor } from '../defineTool.js'
 
-/** 最小化的 mock MCP server——捕获 registerTool 注册的 handler 供测试调用 */
+/** 最小化的 mock MCP server——捕获 registerTool 注册的 handler 与配置供测试调用 */
 function createMockServer() {
-  const handlers = new Map<string, (args: any) => Promise<any>>()
+  const handlers = new Map<string, (args: unknown) => Promise<any>>()
+  const configs = new Map<string, Record<string, unknown>>()
   return {
     server: {
-      tool(name: string, _desc: string, _schema: any, _annotations: any, handler: (args: any) => Promise<any>) {
+      registerTool(name: string, config: Record<string, unknown>, handler: (args: unknown) => Promise<any>) {
+        configs.set(name, config)
         handlers.set(name, handler)
       },
     } as unknown as McpServer,
-    call(name: string, args?: any) {
+    getConfig(name: string) {
+      return configs.get(name)
+    },
+    call(name: string, args?: unknown) {
       const handler = handlers.get(name)
       if (!handler)
         throw new Error(`Tool "${name}" not registered`)
@@ -29,13 +35,15 @@ function createFakeBridge(send: (action: BridgeAction, data?: unknown) => Promis
 }
 
 describe('defineTool — registerTool', () => {
-  it('wraps execute {text, structured} into MCP result shape', async () => {
-    const { server, call } = createMockServer()
+  it('wraps execute {text, structured} into MCP result shape and passes outputSchema', async () => {
+    const { server, call, getConfig } = createMockServer()
 
     const descriptor: ToolDescriptor = {
       name: 'test_tool',
       description: 'test',
       schema: {},
+      outputSchema: { connected: z.boolean() },
+      annotations: { readOnlyHint: true },
       errorLabel: '测试失败',
       async execute(_args, ctx) {
         const status = await ctx.invoke(BridgeAction.GET_STATUS)
@@ -55,6 +63,10 @@ describe('defineTool — registerTool', () => {
     }))
 
     registerTool(server, descriptor, bridge)
+    const config = getConfig('test_tool')
+    expect(config?.outputSchema).toBeDefined()
+    expect(config?.annotations).toEqual({ readOnlyHint: true })
+
     const result = await call('test_tool')
 
     expect(result.content[0].type).toBe('text')

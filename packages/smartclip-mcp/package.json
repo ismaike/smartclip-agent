@@ -2,21 +2,45 @@
   "name": "smartclip-mcp",
   "type": "module",
   "version": "1.6.1",
-  "description": "MCP Server for SmartClip Chrome Extension - enables AI agents to clip web pages",
+  "mcpName": "io.github.ismaike/smartclip-mcp",
+  "description": "Chrome Extension-powered MCP server that lets AI agents (Claude Code, Cursor, Gemini CLI, Windsurf) read logged-in webpages as Markdown and clip them to 16 note-taking apps.",
+  "homepage": "https://smartclip.app",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/ismaike/smartclip-agent",
-    "directory": "smartclip-agent/packages/smartclip-mcp"
+    "directory": "packages/smartclip-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/ismaike/smartclip-agent/issues"
   },
   "keywords": [
     "mcp",
+    "mcp-server",
     "model-context-protocol",
+    "claude-code",
+    "cursor",
+    "windsurf",
+    "gemini-cli",
+    "opencode",
+    "ai-agent",
     "chrome-extension",
     "web-clipper",
+    "html-to-markdown",
+    "read-logged-in-pages",
+    "browser-bridge",
     "smartclip",
+    "obsidian",
     "notion",
-    "obsidian"
+    "flomo",
+    "siyuan",
+    "logseq",
+    "joplin",
+    "feishu",
+    "yuque",
+    "memos",
+    "wolai",
+    "flowus"
   ],
   "main": "dist/index.js",
   "bin": {
@@ -31,7 +55,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "test": "vitest run --passWithNoTests",

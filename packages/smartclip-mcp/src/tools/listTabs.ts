@@ -1,10 +1,11 @@
-import { BridgeAction } from 'smartclip-bridge-protocol'
+import { BridgeAction, listTabsResultSchema } from 'smartclip-bridge-protocol'
 import type { ToolDescriptor, ToolContext } from './defineTool.js'
 
 export default {
   name: 'list_tabs',
   description: '列出浏览器所有标签页。',
   schema: {},
+  outputSchema: listTabsResultSchema,
   annotations: {
     readOnlyHint: true,
     idempotentHint: true,

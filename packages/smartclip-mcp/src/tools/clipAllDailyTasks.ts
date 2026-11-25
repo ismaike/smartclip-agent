@@ -1,4 +1,4 @@
-import { BridgeAction, destinationSchema } from 'smartclip-bridge-protocol'
+import { BridgeAction, clipAllDailyTasksResultSchema, destinationSchema } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
 import type { ToolDescriptor, ToolContext } from './defineTool.js'
 
@@ -14,6 +14,7 @@ export default {
     closeTab: z.boolean().default(true)
       .describe('完成后是否关闭标签页'),
   },
+  outputSchema: clipAllDailyTasksResultSchema,
   annotations: {
     destructiveHint: false,
     idempotentHint: false,
@@ -33,6 +34,10 @@ export default {
     if (summary.total === 0) {
       return {
         text: '没有待处理的每日任务。',
+        structured: {
+          summary,
+          results: [],
+        },
       }
     }
 

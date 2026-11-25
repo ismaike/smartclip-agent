@@ -10,6 +10,7 @@
 
 import type { ToolDescriptor } from './defineTool.js'
 import listTabs from './listTabs.js'
+import readPage from './readPage.js'
 import saveClip from './saveClip.js'
 import clipPage from './clipPage.js'
 import getDailyTasks from './getDailyTasks.js'
@@ -20,6 +21,7 @@ import getStatus from './getStatus.js'
 
 export const tools: ToolDescriptor[] = [
   listTabs,
+  readPage,
   saveClip,
   clipPage,
   getDailyTasks,

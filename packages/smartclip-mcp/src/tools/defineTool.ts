@@ -2,7 +2,7 @@
  * defineTool — 工具定义模块（深模块）
  *
  * 在单个 Tool Descriptor 背后吸收：
- * - MCP 工具注册（server.tool）
+ * - MCP 工具注册（server.registerTool）
  * - bridge 调用（invoke，返回归一化结果，失败自动抛异常）
  * - 错误格式化（catch → errorLabel 前缀）
  * - MCP 结果形状包装（execute 返回 {text, structured}，defineTool 包成 MCP 结果）
@@ -12,8 +12,12 @@
 
 import type { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { createBridgeInvoker, type BridgeInvoker } from 'smartclip-bridge-protocol'
-import type { WebSocketBridge } from '../bridge/websocketBridge.js'
+import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js'
+import {
+  createBridgeInvoker,
+  type BridgeInvoker,
+  type BridgeTransport,
+} from 'smartclip-bridge-protocol'
 
 /** execute 的返回值——纯域结果，不含 MCP 形状 */
 export interface ToolResult {
@@ -39,8 +43,10 @@ export interface ToolDescriptor {
   description: string
   /** zod 输入参数 schema */
   schema: Record<string, z.ZodTypeAny>
+  /** 可选 zod 输出结构 schema，对应 structuredContent */
+  outputSchema?: Record<string, z.ZodTypeAny> | z.ZodTypeAny
   /** MCP 工具 annotations（readOnlyHint / destructiveHint / idempotentHint / openWorldHint） */
-  annotations?: Record<string, unknown>
+  annotations?: ToolAnnotations
   /** 错误文案前缀，如 '保存失败'。defineTool catch 异常后拼成 `${errorLabel}: ${message}` */
   errorLabel: string
   /** 工具执行逻辑。只负责映射，返回 { text, structured }，不碰 MCP 形状 */
@@ -48,13 +54,11 @@ export interface ToolDescriptor {
 }
 
 /**
- * 从 WebSocketBridge 创建 ToolContext。
+ * 从任意 BridgeTransport（WebSocketBridge 或 HttpBridgeTransport）创建 ToolContext。
  * 内部用 createBridgeInvoker 绑定 transport，invoke 返回归一化结果。
  */
-export function createToolContext(bridge: WebSocketBridge): ToolContext {
-  const invoker = createBridgeInvoker({
-    send: (action, data) => bridge.send(action, data),
-  })
+export function createToolContext(transport: BridgeTransport): ToolContext {
+  const invoker = createBridgeInvoker(transport)
   return { invoke: invoker.invoke }
 }
 
@@ -63,20 +67,23 @@ export function createToolContext(bridge: WebSocketBridge): ToolContext {
  *
  * 内部完成：MCP 注册 → 调用 execute → 包成 MCP 结果 → catch 异常格式化错误。
  */
-export function registerTool(server: McpServer, descriptor: ToolDescriptor, bridge: WebSocketBridge): void {
-  const ctx = createToolContext(bridge)
+export function registerTool(server: McpServer, descriptor: ToolDescriptor, transport: BridgeTransport): void {
+  const ctx = createToolContext(transport)
 
-  server.tool(
+  server.registerTool(
     descriptor.name,
-    descriptor.description,
-    descriptor.schema,
-    descriptor.annotations ?? {},
-    async (args: any) => {
+    {
+      description: descriptor.description,
+      inputSchema: descriptor.schema,
+      ...(descriptor.outputSchema !== undefined ? { outputSchema: descriptor.outputSchema } : {}),
+      ...(descriptor.annotations !== undefined ? { annotations: descriptor.annotations } : {}),
+    },
+    async (args: unknown) => {
       try {
         const result = await descriptor.execute(args, ctx)
         return {
           content: [{ type: 'text' as const, text: result.text }],
-          structuredContent: result.structured,
+          ...(result.structured !== undefined ? { structuredContent: result.structured } : {}),
         }
       }
       catch (err) {

@@ -3,6 +3,13 @@ import type { BridgeActionInput } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
 import type { ToolDescriptor, ToolContext } from './defineTool.js'
 
+const saveClipOutputSchema = {
+  saved: z.boolean(),
+  destination: destinationSchema,
+  taskId: z.string().nullable(),
+  warning: z.string().nullable(),
+}
+
 export default {
   name: 'save_clip',
   description: '保存内容到笔记平台。',
@@ -17,7 +24,9 @@ export default {
     destination: destinationSchema
       .describe('保存目标平台'),
   },
+  outputSchema: saveClipOutputSchema,
   annotations: {
+    readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: true,
   },

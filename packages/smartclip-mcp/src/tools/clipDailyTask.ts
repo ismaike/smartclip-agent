@@ -2,6 +2,16 @@ import { BridgeAction, destinationSchema } from 'smartclip-bridge-protocol'
 import { z } from 'zod'
 import type { ToolDescriptor, ToolContext } from './defineTool.js'
 
+const clipDailyTaskOutputSchema = {
+  taskId: z.string(),
+  title: z.string().nullable(),
+  url: z.string().nullable(),
+  saved: z.boolean(),
+  clipTaskId: z.string().nullable(),
+  warning: z.string().nullable(),
+  markdown: z.string().nullable(),
+}
+
 export default {
   name: 'clip_daily_task',
   description: '剪藏单个每日任务。',
@@ -15,7 +25,9 @@ export default {
     closeTab: z.boolean().default(true)
       .describe('完成后是否关闭标签页'),
   },
+  outputSchema: clipDailyTaskOutputSchema,
   annotations: {
+    readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
   },

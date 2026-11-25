@@ -1,10 +1,18 @@
 import { BridgeAction } from 'smartclip-bridge-protocol'
+import { z } from 'zod'
 import type { ToolDescriptor, ToolContext } from './defineTool.js'
+
+const getVocabularyOutputSchema = {
+  enabled: z.boolean(),
+  words: z.array(z.record(z.unknown())),
+  count: z.number(),
+}
 
 export default {
   name: 'get_vocabulary',
   description: '获取用户生词本。',
   schema: {},
+  outputSchema: getVocabularyOutputSchema,
   annotations: {
     readOnlyHint: true,
     idempotentHint: true,
@@ -16,6 +24,11 @@ export default {
     if (count === 0) {
       return {
         text: '生词本为空。',
+        structured: {
+          enabled,
+          words: [],
+          count: 0,
+        },
       }
     }
 
