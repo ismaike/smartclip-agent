@@ -95,7 +95,7 @@ cd /path/to/your/project
 
 然后在 **SmartClip 扩展 → Options → General Settings → MCP 诊断区域**，填入**同一个 token**。两端必须一致，否则连接会失败。
 
-> 💡 token 任选一串字符即可，例如 UUID。它只是本地认证凭证，不与 SmartClip 云端交互。
+> 💡 token 任选一串字符即可，例如 UUID。它只是本地认证凭证，不与 SmartClip 云端交互。Session Token 由启动 Local Hub 的进程读取；新版代理检测到新 token 时会自动重启旧 Hub，若要移除 token 或排查异常请先执行 `smartclip-mcp daemon stop`。
 
 ---
 
@@ -153,34 +153,32 @@ smartclip-agent-extension --project --targets .claude/skills
 
 ---
 
-## 第四步：验证安装
+## 第四步：重启客户端并验证安装
 
-运行 doctor 自检：
+1. **重启 Claude Code 会话**，让它加载新的 `.mcp.json` 和 skills（或在终端先执行 `smartclip-mcp daemon start` 启动后台 Local Hub）。
+2. 运行诊断命令确认环境与连接状态：
 
 ```bash
+smartclip-mcp doctor
 smartclip-agent-doctor
 ```
 
 如果想要 JSON 格式的结果：
 
 ```bash
+smartclip-mcp doctor --json
 smartclip-agent-doctor --json
 ```
 
-doctor 会检查：
-
-- `.mcp.json` 是否存在 `smartclip` 配置
-- `smartclip-mcp` 是否可执行
-- SmartClip 扩展连接是否健康
-- skills 是否已部署到 `.claude/skills`
+两个诊断命令分工不同：
+- `smartclip-mcp doctor`：检查客户端 MCP 配置、Local Hub 运行状态、Chrome 扩展握手与 Pro 权限。
+- `smartclip-agent-doctor`：检查 `.mcp.json`、`smartclip-mcp` 可执行性、本地健康探针与 `.claude/skills` 部署情况。
 
 看到 ✅ 全绿即表示配置完成。
 
 ---
 
 ## 第五步：在 Claude Code 中使用
-
-**重启 Claude Code 会话**，让它加载新的 `.mcp.json` 和 skills。
 
 进入项目后，直接用自然语言与 Claude Code 对话即可。SmartClip 会在后台自动选择合适的工具。
 
@@ -190,7 +188,7 @@ doctor 会检查：
 > 帮我读一下当前 Chrome 里打开的这个页面
 ```
 
-Claude Code 会调用 `clip_page`（不传 destination），返回 Markdown 格式的正文。
+Claude Code 会调用只读工具 `read_page`（不保存到任何笔记平台），返回 Markdown 格式的正文。
 
 ### 场景 2：读取指定 URL
 
@@ -229,17 +227,18 @@ SmartClip 会列出待办任务，或一键批量处理全部 pending 任务。
 
 ## 可用工具一览
 
-SmartClip MCP 共提供 8 个工具，Claude Code 会根据你的意图自动选择。你通常不需要手动指定工具名。
+SmartClip MCP 共提供 9 个工具，Claude Code 会根据你的意图自动选择。你通常不需要手动指定工具名。
 
 | 工具 | 作用 | 主要参数 |
 |---|---|---|
-| `clip_page` | 提取网页正文，可选保存 | `url` / `tabId`、`destination`（可选）、`mode`（`full`/`selection`）|
-| `list_tabs` | 列出 Chrome 所有标签页 | 无 |
+| `read_page` | 只读提取网页正文为 Markdown（不保存） | `url` / `tabId`、`mode`（`full`/`selection`）、`maxLength`（默认 `50000`）|
+| `clip_page` | 提取网页正文，可选保存到笔记平台 | `url` / `tabId`、`destination`（可选）、`mode`（`full`/`selection`）|
 | `save_clip` | 保存内容到指定平台 | `url`、`destination`、`title`、`contentHtml` 等 |
+| `list_tabs` | 列出 Chrome 所有标签页 | 无 |
 | `get_daily_tasks` | 查看每日待剪藏任务池 | `status`（`pending`/`completed`/`skipped`）|
 | `clip_daily_task` | 处理单个每日任务 | `taskId`、`destination`、`closeTab` |
 | `clip_all_daily_tasks` | 批量处理所有待办任务 | `destination`、`mode`、`closeTab` |
-| `get_vocabulary` | 获取用户生词本 | 无 |
+| `get_vocabulary` | 查看用户生词本（只读） | 无 |
 | `get_status` | 检查连接健康状态 | 无 |
 
 ---
@@ -248,7 +247,13 @@ SmartClip MCP 共提供 8 个工具，Claude Code 会根据你的意图自动选
 
 ### 从本地源码启动（开发自测）
 
-如果你在开发 SmartClip，想用本地构建产物而非 npm 发布版，修改 `.mcp.json`：
+如果你在开发 SmartClip，想用本地构建产物而非 npm 发布版，先停掉可能仍在运行的发布版后台 Hub：
+
+```bash
+smartclip-mcp daemon stop
+```
+
+然后修改 `.mcp.json`：
 
 ```json
 {
@@ -264,21 +269,17 @@ SmartClip MCP 共提供 8 个工具，Claude Code 会根据你的意图自动选
 }
 ```
 
-> ⚠️ 改完 `.mcp.json` **必须重启 Claude Code 会话**才会生效，配置在会话启动时被快照，不支持热加载。
+> ⚠️ 改完 `.mcp.json` **必须重启 Claude Code 会话**才会生效，配置在会话启动时被快照，不支持热加载。如果已有同版本号的旧 Hub 在后台运行，需先执行 `smartclip-mcp daemon stop`，避免继续复用旧构建产物。
 
-### 多客户端使用限制
+### 多客户端并发共享（Local Bridge Hub）
 
-SmartClip 的连接模型有一个重要限制：
+SmartClip 默认采用 **Local Bridge Hub** 架构实现多客户端并发共享：
 
-- `smartclip-mcp` 是 **stdio server + 本地 WebSocket bridge** 的组合
-- 浏览器扩展只连接固定地址 `ws://127.0.0.1:18365`，且扩展内只维护一条 MCP bridge 连接
-- **同一时刻只能有一个 AI 客户端真正使用 SmartClip**
+- `smartclip-mcp` 默认作为薄 stdio 代理启动，在 `127.0.0.1:18365` 自动复用或拉起后台共享 Local Hub
+- 浏览器扩展只连接固定地址 `ws://127.0.0.1:18365/`，但多个 Claude Code、Cursor、Gemini CLI、Windsurf 窗口（stdio 或 Streamable HTTP `http://127.0.0.1:18365/mcp`）可以**同时连接并共享同一条扩展连接**
+- 涉及标签页切换与写入保存的动作会在 Hub 内部自动串行排队，避免多客户端互相打断
 
-如果你同时在 Claude Code 和 Cursor 里启用了 SmartClip，后启动的客户端会抢不到扩展连接。推荐做法：
-
-1. 只在当前正在工作的客户端里启用 SmartClip
-2. 切换客户端前，先关闭旧客户端的 `smartclip-mcp` 进程
-3. 在新客户端触发一次 SmartClip 工具调用，或在扩展设置页点「立即重连」
+如果你处于受限沙箱或确实需要单进程直连独占模式，可传入 `--no-daemon` 或设置 `SMARTCLIP_MCP_NO_DAEMON=1`。
 
 ---
 
@@ -289,46 +290,44 @@ SmartClip 的连接模型有一个重要限制：
 ### 1. 运行 doctor
 
 ```bash
+smartclip-mcp doctor --json
 smartclip-agent-doctor --json
 ```
 
-查看具体哪一项失败。
+先通过 `smartclip-mcp doctor` 确认 `client-configs`、`hub-daemon`、`extension-connection`（含握手/token）与 `extension-capability`（Pro 与 MCP 开关），再用 `smartclip-agent-doctor` 检查 skills 部署。
 
-### 2. 端口 18365 被占用
-
-```bash
-lsof -nP -iTCP:18365
-```
-
-如果有多个进程占用，说明有多个 `smartclip-mcp` 实例。结束多余的：
+### 2. 检查或重启 Local Bridge Hub
 
 ```bash
-# 找到占用进程的 PID，然后
-/bin/kill -9 <PID>
+smartclip-mcp daemon status
+smartclip-mcp daemon stop
 ```
+
+> ⚠️ 默认模式下端口 `18365` 由一个 detached 的 Local Hub 进程监听，stdio 代理和 Chrome 扩展都会连向它，因此 `lsof -nP -iTCP:18365` 看到多个进程属于正常现象。**不要直接 `kill -9` 共享 Hub**，这会中断其他客户端正在进行的调用和 Streamable HTTP 会话，并遗留 `~/.smartclip/hub.json`。仅在使用 `--no-daemon` 单进程模式或 `daemon stop` 无法停止异常进程时，再通过 `lsof` / `kill` 清理。
 
 ### 3. 扩展未连接
 
 在 SmartClip 扩展设置页：
-- 确认「Enable MCP Service」已开启
+- 确认「Enable MCP Service」已开启且账号为 Pro
 - 确认 Session Token 与 `.mcp.json` 里的 `SMARTCLIP_MCP_SESSION_TOKEN` **完全一致**
 - 点击「立即重连 / 重新检查」
 
 ### 4. Session Token 不匹配
 
-如果工具调用长时间挂起后超时，通常是 token 两端不一致。检查：
+如果工具调用长时间挂起或提示握手失败，通常是 token 两端不一致，或旧 Hub 仍在使用旧配置。检查：
 
 - `.mcp.json` 的 `SMARTCLIP_MCP_SESSION_TOKEN`
 - 扩展 Options 里的 Session Token
 
-两端必须完全相同。
+两端必须完全相同；修改或移除 token 后运行 `smartclip-mcp daemon stop`，再由客户端重新拉起新 Hub。
 
-### 5. schema 不匹配报错
+### 5. schema 不匹配或版本滞后报错
 
-如果看到类似「状态数据格式无效」「缺少 premium 字段」的错误，说明运行的 `smartclip-mcp` 版本与扩展版本不匹配。升级到最新版：
+如果看到类似「状态数据格式无效」「缺少字段」的错误，说明运行的 `smartclip-mcp` 或后台 Hub 版本与扩展版本不匹配。升级到最新版并重启后台 Hub：
 
 ```bash
 npm update -g smartclip-mcp
+smartclip-mcp daemon stop
 ```
 
 然后重启 Claude Code 会话。
@@ -340,14 +339,19 @@ npm update -g smartclip-mcp
 如果需要完全移除 SmartClip：
 
 ```bash
-# 卸载 skills
-smartclip-agent-extension uninstall --project
+# 1. 停止后台 Local Bridge Hub（会自动清理 ~/.smartclip/hub.json）
+smartclip-mcp daemon stop
 
-# 卸载全局包
+# 2. 卸载项目中的 Claude Code skills（不带 --targets 时默认只删 .agents/skills）
+smartclip-agent-extension uninstall --project --targets .claude/skills
+# 如需清理项目内所有支持的 skills 目录，可改用：
+# smartclip-agent-extension uninstall --project --all
+
+# 3. 卸载全局包
 npm uninstall -g smartclip-mcp smartclip-agent-extension
 ```
 
-然后删除项目里的 `.mcp.json` 中 `smartclip` 配置项。
+然后删除项目 `.mcp.json` 中的 `smartclip` 配置项；如需彻底清理状态目录，可按需删除 `~/.smartclip`（若自定义了 `SMARTCLIP_HOME` 则删除对应目录）。
 
 ---
 

@@ -1,93 +1,143 @@
 # SmartClip Agent 安装与使用手册
 
-本文档面向最终用户，说明如何安装 `smartclip-agent`、配置 MCP、安装技能，并在 AI CLI/IDE 中使用 SmartClip。
+本文档面向最终用户，说明如何安装 `smartclip-mcp`（以及可选的 `smartclip-agent-extension`）、配置 MCP、运行诊断，并在 AI CLI/IDE 中使用 SmartClip。
 
 ## 1. 你会得到什么
 
 安装完成后，你的 AI agent 可以：
 
-- 读取当前 Chrome 中打开的网页
-- 提取网页正文并转成 Markdown
-- 将内容保存到 Obsidian / Notion / Flomo / Joplin / 思源 / 飞书等
-- 查看和处理 SmartClip 的每日任务池
+- 只读当前 Chrome 中打开的网页（含登录态页面）并转成 Markdown（`read_page`）
+- 将网页或 AI 整理后的总结保存到 Obsidian / Notion / Flomo / Joplin / 思源 / 飞书等 16 个平台（`clip_page` / `save_clip`）
+- 查看和处理 SmartClip 的每日任务池，查看生词本（只读）
+- 多个 AI 客户端并发共享同一个 Chrome 扩展连接
 
 ## 2. 安装前准备
 
-### Step 1：准备运行环境
+1. Node.js >= 18
+2. Chrome 浏览器与 SmartClip Chrome 扩展
+3. 在扩展中登录 Pro 账号，打开 **SmartClip → Options → General Settings → Enable MCP Service / 开启 MCP 服务**
 
-确保已安装：
+## 3. 快速安装（推荐 3 步完成）
 
-- Node.js >= 18
-- npm 或 pnpm
-- Chrome 浏览器
-- SmartClip Chrome 扩展
-
-### Step 2：准备 SmartClip 扩展
-
-在 Chrome 中完成以下操作：
-
-1. 安装 SmartClip 扩展
-2. 登录 SmartClip 账号
-3. 确认当前账号为 Pro（MCP 功能需要 Pro）
-4. 打开 **SmartClip → Options → General Settings**
-5. 打开 **Enable MCP Service / 开启 MCP 服务**
-
-## 3. 安装方式概览
-
-通常有两部分：
-
-### 必装部分
-
-1. `smartclip-mcp`
-  - MCP server
-  - 为 AI 客户端提供 stdio MCP 服务
-
-### 推荐安装部分
-
-1. `smartclip-agent-extension`
-  - 安装技能、hooks、doctor CLI
-  - 帮助 Claude Code / Gemini CLI / OpenCode 更稳定地调用 SmartClip
-
-## 4. 安装 smartclip-mcp
-
-### Step 1：全局安装
+### Step 1：安装并一键配置客户端
 
 ```bash
 npm install -g smartclip-mcp
+smartclip-mcp setup
 ```
 
-或：
+`smartclip-mcp setup` 支持以下 5 个配置目标（保留已有其他 MCP 服务器，但会**替换**已有的 `mcpServers.smartclip` 条目）：
+- 项目目录 `.mcp.json`
+- Claude Code（`~/.claude.json`）
+- Cursor（`~/.cursor/mcp.json`）
+- Gemini CLI（`~/.gemini/settings.json`）
+- Windsurf（`~/.codeium/windsurf/mcp_config.json`）
+
+选择策略说明：
+- **交互终端（TTY）**：启动选择向导，可输入序号（如 `1,2`）或输入 `a` 写入全部已探测目标；直接回车默认仅写入第 1 项（`.mcp.json`）。
+- **非交互环境（无 `--client`）**：仅写入磁盘上已存在的全局客户端配置；若都不存在，则写入当前目录 `.mcp.json`。若要一次性写入全部 5 个目标，请显式传入 `--client all`。
+
+常用非交互参数：
 
 ```bash
-pnpm add -g smartclip-mcp
+smartclip-mcp setup --client all --transport stdio
+smartclip-mcp setup --client claude,cursor --transport stdio
+smartclip-mcp setup --client cursor --transport http
+smartclip-mcp setup --client project --token your-secret-token
 ```
 
-### Step 2：验证安装
+> 说明：`--transport http` 会按客户端生成对应格式（Claude Code / `.mcp.json` 使用 `{"type": "http", "url": "..."}`，Gemini CLI 使用 `{"httpUrl": "..."}`，Cursor / Windsurf 使用 `{"url": "..."}`）。使用 HTTP 模式不会由客户端自动拉起 Hub，须先手动运行 `smartclip-mcp daemon start`。
+
+### Step 2：重启 AI 客户端（或启动 Local Hub）
+
+重启对应的 AI 客户端使新配置生效；若使用 Streamable HTTP 模式或希望在启动客户端前先预热连接，可先运行：
 
 ```bash
-smartclip-mcp --help
+smartclip-mcp daemon start
 ```
 
-如果没有 help 输出也没关系，只要命令可执行即可。
+### Step 3：运行健康检查
 
-## 5. 配置 MCP
+当客户端已拉起 `smartclip-mcp`（或已手动 `daemon start`）后，运行诊断验证：
 
-在你的项目根目录创建 `.mcp.json`：
-
-```json
-{
-  "mcpServers": {
-    "smartclip": {
-      "command": "npx",
-      "args": ["-y", "smartclip-mcp"]
-    }
-  }
-}
+```bash
+smartclip-mcp doctor
 ```
 
-### 可选：启用 session token 认证
+查看实时健康探针或管理后台 Local Bridge Hub：
 
-如果你希望本地桥接更安全，可以加上环境变量：
+```bash
+smartclip-mcp --healthcheck --json
+smartclip-mcp daemon status
+smartclip-mcp daemon stop
+```
+
+## 4. 可选：安装高阶工作流 Skills（`smartclip-agent-extension`）
+
+`smartclip-mcp` 已自带 MCP `instructions` 与 4 个原生 Prompts，普通场景无需额外装包。如果你希望为支持 `SKILL.md` 的客户端（Claude Code / Gemini CLI 等）补充工作流规则，可额外安装：
+
+```bash
+npm install -g smartclip-agent-extension
+smartclip-agent-extension
+```
+
+支持交互或参数安装（不会在 `npm install` 时静默写入文件；未指定 `--targets` 时默认仅写入 `.agents/skills`）：
+
+```bash
+# 全局安装到默认标准目录 (~/.agents/skills)
+smartclip-agent-extension --global
+
+# 全局安装到 Claude Code / Gemini CLI 对应目录，或全部 3 个目录
+smartclip-agent-extension --global --targets .claude/skills
+smartclip-agent-extension --global --targets .gemini/skills
+smartclip-agent-extension --global --all
+
+# 项目安装到所有目录
+smartclip-agent-extension --project --all
+
+# 指定范围和多个目录
+smartclip-agent-extension --global --targets .agents/skills,.claude/skills
+```
+
+支持的目标目录：
+- `.agents/skills` - 标准通用目录（默认）
+- `.claude/skills` - Claude Code
+- `.gemini/skills` - Gemini CLI
+
+包含的 4 个技能：
+- `smartclip-read`
+- `smartclip-save`
+- `smartclip-daily`
+- `smartclip-troubleshooting`
+
+卸载、升级与扩展诊断（`--all` 默认作用于全局 3 个目录，卸载/升级项目级目录需加 `--project`）：
+
+```bash
+smartclip-agent-extension uninstall --global
+smartclip-agent-extension uninstall --all
+smartclip-agent-extension uninstall --project --all
+smartclip-agent-extension upgrade --global --all
+smartclip-agent-extension doctor
+smartclip-agent-doctor
+```
+
+## 5. 连接架构：Local Bridge Hub（多客户端共享）
+
+```text
+Claude Code (stdio) ──┐
+Gemini CLI  (stdio) ──┼──▶ Local Bridge Hub (127.0.0.1:18365) ◀──WS(/)──▶ Chrome 扩展
+Cursor / Windsurf  ───┘       ├─ /mcp    (Streamable HTTP)
+                              └─ /health (毫秒级状态检查)
+```
+
+- 同一时刻可以同时打开多个 Claude Code、Cursor 或 Gemini CLI 窗口共享同一个 SmartClip 扩展连接。
+- 涉及操作标签页或保存的动作会在 Hub 内部自动串行排队，防止互相干扰。
+- 如在受限沙箱或需单进程直连，可使用 `--no-daemon` 或设置 `SMARTCLIP_MCP_NO_DAEMON=1`。
+
+## 6. 安全配置与环境变量
+
+- **Origin 白名单**：默认仅放行浏览器扩展 Origin（`chrome-extension://`、`moz-extension://`、`safari-web-extension://`），阻止网页跨站劫持。若设置了 `SMARTCLIP_MCP_ALLOWED_ORIGINS`，会**完全覆盖**默认扩展白名单，因此列表必须精确包含所有要使用的扩展 Origin（逗号分隔）。
+- **Session Token**：若启动 Local Hub 的进程带有 `SMARTCLIP_MCP_SESSION_TOKEN`，扩展必须完成带同一 token 的 `hello` 握手才能连接，不再允许静默降级绕过。新版 `smartclip-mcp` 代理若检测到与运行中 Hub 的 token/版本/Origin 配置不一致，会自动重启 Hub 以应用新配置；若需移除 token 或手动使用 `daemon start` / HTTP 模式，请先运行 `smartclip-mcp daemon stop` 再用新环境变量启动 Hub（例如 `SMARTCLIP_MCP_SESSION_TOKEN=your-secret-token smartclip-mcp daemon start`）。
 
 ```json
 {
@@ -103,339 +153,26 @@ smartclip-mcp --help
 }
 ```
 
-然后在 SmartClip 扩展设置中的 MCP 诊断区域，填入或确认同一个 token。
-
-## 6. 安装 smartclip-agent-extension（推荐）
-
-### Step 1：全局安装
-
-```bash
-npm install -g smartclip-agent-extension
-```
-
-或：
-
-```bash
-pnpm add -g smartclip-agent-extension
-```
-
-### Step 2：安装 skills 到你的 agent 工作区
-
-在你的项目目录执行：
-
-```bash
-smartclip-agent-extension
-```
-
-#### 交互式安装
-
-执行后会提示选择安装范围：
-
-```
-🚀 SmartClip Agent Skills 安装向导
-
-请选择范围:
-
-  [1] 全局 - 用户主目录
-      Mac/Linux: ~/.agents/skills 等
-      Windows:   %USERPROFILE%\.agents\skills 等
-
-  [2] 项目 - 当前项目目录
-      当前目录: /path/to/your/project
-
-  [q] 退出
-
-请选择 (默认: 1):
-```
-
-选择范围后，会继续提示选择目标目录：
-
-```
-请选择要安装到的目录（输入序号，多个用逗号分隔）:
-
-  [1] Standard (.agents/skills) (默认)
-      推荐 - 标准通用目录
-  [2] Claude Code (.claude/skills)
-      Claude Code 客户端
-  [3] Gemini CLI (.gemini/skills)
-      Gemini CLI 客户端
-
-  [a] 全部
-  [q] 退出
-
-请选择 (默认: 1):
-```
-
-#### 非交互模式
-
-```bash
-# 全局安装（推荐）
-smartclip-agent-extension --global
-
-# 项目安装
-smartclip-agent-extension --project
-
-# 全局安装到默认目录
-smartclip-agent-extension --global --default
-
-# 项目安装到所有目录
-smartclip-agent-extension --project --all
-
-# 指定范围和目录
-smartclip-agent-extension --global --targets .agents/skills,.claude/skills
-```
-
-**全局安装路径**：
-
-- Mac/Linux: `~/.agents/skills`, `~/.claude/skills`, `~/.gemini/skills`
-- Windows: `%USERPROFILE%\.agents\skills`, `%USERPROFILE%\.claude\skills`, `%USERPROFILE%\.gemini\skills`
-
-**项目安装路径**：
-
-- 当前目录下的 `.agents/skills`, `.claude/skills`, `.gemini/skills`
-
-### Step 3：确认安装结果
-
-它会尝试向以下目录安装技能（根据你的选择）：
-
-- `.agents/skills` - 标准通用目录（推荐）
-- `.claude/skills` - Claude Code
-- `.gemini/skills` - Gemini CLI
-
-应出现以下技能目录：
-
-- `smartclip-read`
-- `smartclip-save`
-- `smartclip-daily`
-- `smartclip-troubleshooting`
-
-### 补充：卸载与升级
-
-除了安装，`smartclip-agent-extension` 还支持卸载和升级：
-
-```bash
-# 卸载全局 Skills
-smartclip-agent-extension uninstall --global
-
-# 卸载所有
-smartclip-agent-extension uninstall --all
-
-# 升级全局 Skills（覆盖安装）
-smartclip-agent-extension upgrade --global
-```
-
-升级等同于先卸载再安装，适合更新到最新版本的技能文件。运行 `smartclip-agent-extension --help` 可查看完整参数列表。
-
-## 7. 运行 doctor 检查
-
-安装后建议执行：
-
-```bash
-smartclip-agent-doctor
-```
-
-如果希望得到结构化结果：
-
-```bash
-smartclip-agent-doctor --json
-```
-
-doctor 主要检查：
-
-- `.mcp.json` 是否存在 `smartclip` 配置
-- `smartclip-mcp` 是否可执行（`npx -y smartclip-mcp --help`）
-- SmartClip 扩展连接是否健康（`--healthcheck`）
-- 打包的 skill 源文件是否完整
-- skills 是否已部署到 global + project 双 scope 的 agent 目录
-
-## 8. 使用限制与连接模型
-
-在开始多客户端接入前，请先了解当前实现的限制：
-
-- `smartclip-mcp` 当前是 **stdio MCP server + 本地 WebSocket bridge** 的组合，不是一个可以被多个上游客户端同时复用的共享 daemon。
-- 浏览器扩展当前只会连接固定地址 `ws://127.0.0.1:18365`，并且扩展内部只维护一条 MCP bridge 连接。
-- 这意味着，同一时刻只能有一个 AI 客户端实例真正使用 SmartClip MCP。
-- 如果你已经在一个 Claude Code 中使用 SmartClip，再打开另一个 Claude Code、OpenCode 或 Gemini CLI，后一个客户端通常需要等前一个 `smartclip-mcp` 进程退出后才能正常接管。
-- 即使你手动启动多个 `smartclip-mcp` 实例，或者让它们绑定不同端口，也不能让多个客户端同时共享当前这一个浏览器扩展连接；最多只能切换“由谁接管”。
-
-推荐做法：
-
-1. 只在当前正在工作的那个 AI 客户端里启用 SmartClip MCP。
-2. 切换客户端前，先关闭当前正在使用 SmartClip 的客户端，或结束它启动的 `smartclip-mcp` 进程。
-3. 再到新的客户端里触发一次 SmartClip 工具调用，或在扩展设置页中点击“立即重连 / 重新检查”。
-
-## 9. 在不同客户端中的使用方式
-
-### Claude Code
-
-1. 在项目目录中放置 `.mcp.json`
-2. 确保 `.claude/skills` 已存在
-3. 执行 `smartclip-agent-extension`
-4. 打开 Claude Code 并进入该项目
-
-推荐使用方式：
-
-- “读取当前网页” → `clip_page`（不传 `destination`）
-- “保存到 Obsidian/Notion” → `clip_page` + `destination`
-- “检查连接状态” → `get_status`
-
-### Gemini CLI / OpenCode
-
-流程与 Claude Code 类似：
-
-1. 在项目目录中配置 `.mcp.json`
-2. 创建对应的 skills 目录
-3. 执行 `smartclip-agent-extension`
-4. 重启 agent CLI
-
-### Cursor / Windsurf
-
-Cursor / Windsurf 不一定直接读取 skills 目录，通常需要：
-
-1. 配置 MCP server：`npx -y smartclip-mcp`
-2. 按场景把 `smartclip-read`、`smartclip-save`、`smartclip-daily`、`smartclip-troubleshooting` 的核心说明加入 rules / instructions
-3. 只放当前客户端真正需要的 skill 说明，避免把所有场景规则混在一起
-
-## 10. 推荐使用姿势
-
-### 场景 1：只读网页，不保存
-
-告诉 AI：
-
-- “读取当前网页内容”
-- “总结这个页面”
-- “读取这个 URL 并分析”
-
-此时应优先使用：
-
-- `clip_page`（**不传** `destination`）
-
-### 场景 2：保存网页到笔记工具
-
-告诉 AI：
-
-- “把当前页面保存到 Obsidian”
-- “把这个网页剪藏到 Notion”
-
-此时应使用：
-
-- `clip_page` + `destination`
-
-### 场景 3：保存 AI 自己生成的总结
-
-告诉 AI：
-
-- “把你刚才的总结保存到 Notion”
-
-此时应使用：
-
-- `save_clip`
-
-### 场景 4：处理每日任务池
-
-告诉 AI：
-
-- “看看今天有哪些待处理任务”
-- “处理一个 daily task”
-- “批量处理所有待剪藏任务”
-
-此时应使用：
-
-- `get_daily_tasks`
-- `clip_daily_task`
-- `clip_all_daily_tasks`
-
-## 11. 常见问题排查
-
-### 问题 1：AI 说扩展未连接
-
-按顺序检查：
-
-1. Chrome 是否已打开
-2. SmartClip 扩展是否已安装
-3. MCP 开关是否已打开
-4. 是否为 Pro 账号
-5. 扩展设置页中的诊断状态是否正常
-6. 执行 `smartclip-agent-doctor`
-
-### 问题 2：配置了 `.mcp.json` 但工具还是不可用
-
-检查：
-
-- 当前 AI 客户端是否支持 MCP
-- `.mcp.json` 是否放在正确项目根目录
-- 当前会话是否已经重启
-- `npx -y smartclip-mcp` 是否能被执行
-
-### 问题 3：设置了 token 后认证失败
-
-检查：
-
-- `.mcp.json` 中的 `SMARTCLIP_MCP_SESSION_TOKEN`
-- SmartClip 扩展中的 token
-- 是否存在前后空格或复制错误
-
-### 问题 4：只能读网页，不能保存
-
-检查：
-
-- SmartClip 扩展中的目标平台是否已经配置
-- 对应平台授权是否有效（如 Notion/Obsidian）
-- 你是否明确让 AI 使用保存动作，而不是只做读取
-
-### 问题 5：为什么另一个 Claude Code / Gemini CLI / OpenCode 用不了
-
-检查：
-
-- 是否已经有另一个客户端启动并占用了 `smartclip-mcp`
-- 当前浏览器扩展是否仍然连着前一个客户端启动的 `smartclip-mcp`
-- 前一个客户端是否已经退出，或对应的 `smartclip-mcp` 进程是否已经结束
-
-说明：
-
-- 当前实现不支持多个 AI 客户端同时共享同一个 SmartClip 扩展连接
-- 如果要切换客户端，请先结束前一个 `smartclip-mcp`，再让新的客户端重新连接
-- 仅仅换一个端口并不能解决“同时使用”的问题，因为扩展当前只维护一条 bridge 连接
-
-## 12. 最小可用安装流程（推荐新用户）
-
-如果你只想最快跑通，请按这 6 步操作：
-
-### Step 1
-
-安装 SmartClip Chrome 扩展并登录 Pro 账号
-
-### Step 2
-
-在扩展设置中打开 MCP 服务
-
-### Step 3
-
-全局安装 MCP server：
-
-```bash
-npm install -g smartclip-mcp
-```
-
-### Step 4
-
-在项目目录创建 `.mcp.json`
-
-### Step 5
-
-全局安装 extension：
-
-```bash
-npm install -g smartclip-agent-extension
-```
-
-### Step 6
-
-在项目目录执行：
-
-```bash
-smartclip-agent-extension
-smartclip-agent-doctor
-```
-
-通过后，重启你的 AI 客户端即可开始使用。
+### 环境变量清单
+
+| 变量 | 默认值 | 说明（修改后需重启 Hub 生效） |
+|---|---|---|
+| `SMARTCLIP_MCP_SESSION_TOKEN` | 未设置 | 扩展 `hello` 握手认证 token（设置后禁止 `legacyMode` 降级） |
+| `SMARTCLIP_MCP_ALLOWED_ORIGINS` | 放行扩展协议 | 逗号分隔的精确 WebSocket Origin 白名单（**覆盖**默认扩展协议规则） |
+| `SMARTCLIP_MCP_WS_BIND_HOST` | `127.0.0.1` | Hub / WebSocket 监听地址（Docker/WSL 场景可设为 `0.0.0.0`） |
+| `SMARTCLIP_MCP_PORT` | `18365` | Hub / WebSocket 监听端口（同 `--port`） |
+| `SMARTCLIP_MCP_NO_DAEMON` | `0` | 设为 `1` 时禁用共享 Hub，在当前进程内直连（单客户端模式） |
+| `SMARTCLIP_HOME` | `~/.smartclip` | 状态目录（存放 `hub.json`） |
+
+## 7. 推荐使用姿势
+
+- **只读网页**：直接让 AI 总结或分析网页 → 优先使用 `read_page`（不保存，正文直接返回）
+- **保存网页**：明确要求保存到 Obsidian / Notion 等 → 使用 `clip_page` + `destination`
+- **保存 AI 总结**：把总结保存到笔记平台 → 使用 `save_clip`
+- **处理每日任务池**：查看并处理待办 → `get_daily_tasks` / `clip_daily_task` / `clip_all_daily_tasks`
+
+## 8. 常见问题排查
+
+1. **AI 说扩展未连接**：执行 `smartclip-mcp doctor` 检查 Chrome 是否打开、扩展是否开启 MCP 服务且为 Pro 账号。
+2. **设置了 token 后连接被拒绝**：核对配置中的 `SMARTCLIP_MCP_SESSION_TOKEN` 与扩展设置页中的 token 是否完全一致；若刚改动或清除了 token，先执行 `smartclip-mcp daemon stop` 再重启客户端或 `daemon start`。
+3. **未打包扩展开发调试连接被 403 拒绝**：默认策略已放行所有 `chrome-extension://`（含未打包扩展）；若被 403 拒绝，请检查是否显式设置了 `SMARTCLIP_MCP_ALLOWED_ORIGINS` 且遗漏了该未打包扩展的 Origin。

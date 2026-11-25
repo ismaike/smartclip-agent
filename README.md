@@ -1,66 +1,46 @@
-# SmartClip Agent
+# SmartClip Agent & MCP Server
 
-`smartclip-agent` 是 SmartClip 的 AI agent 集成仓库，用于把 Chrome 扩展能力暴露给 Claude Code、Gemini CLI、OpenCode、Cursor、Windsurf 等客户端。
+English | [简体中文](README.zh-CN.md) | [Official Website](https://smartclip.app) | [Install & Usage Guide](docs/install-and-usage.md)
 
-它主要解决三类问题：
-- 让 AI 读取真实浏览器中的网页内容（包括登录态页面）
-- 让 AI 直接调用 SmartClip 的剪藏与保存能力
-- 让 AI 通过 skills / hooks / doctor 更稳定地发现和使用这些能力
+**SmartClip MCP (`smartclip-mcp`) is a Chrome Extension–powered Model Context Protocol (MCP) server that lets AI coding agents—Claude Code, Cursor, Windsurf, Gemini CLI, and OpenCode—read logged-in webpages as clean Markdown and clip them to 16 note-taking apps.**
 
-## 仓库包含什么
+Unlike headless scrapers or single-app connectors, `smartclip-mcp` connects directly to your real Chrome session via a **Local Bridge Hub** (`127.0.0.1:18365`), reusing your existing browser cookies, paywall/intranet sessions, Turndown conversion rules, and destination credentials—while allowing multiple AI clients to share one extension connection concurrently.
 
-这是一个 pnpm monorepo，当前包含 3 个包：
+---
 
-| 包名 | 目录 | 作用 |
-|---|---|---|
-| `smartclip-bridge-protocol` | `packages/smartclip-bridge-protocol` | 共享协议类型、错误码、schema、Bridge Action 契约（输入/归一化结果校验与归一化逻辑） |
-| `smartclip-mcp` | `packages/smartclip-mcp` | MCP server（stdio）+ 本地 WebSocket bridge |
-| `smartclip-agent-extension` | `packages/smartclip-agent-extension` | skills、hooks、doctor CLI、安装脚本 |
+## Why SmartClip MCP vs. Alternatives?
 
-## 你应该先看哪份文档
+| Capability | **SmartClip MCP** | Fetch / Firecrawl MCP | Playwright / Browser MCP | Single-App MCP (Notion / Obsidian only) |
+|---|---|---|---|---|
+| **Reads logged-in / paywalled / intranet pages** | Yes (uses your live Chrome session) | No (anonymous HTTP/headless) | Partial (requires separate profile/login) | No |
+| **Bypasses anti-bot walls** | Yes (real user browser) | Often blocked | Often flagged | N/A |
+| **Clean HTML-to-Markdown extraction** | Built-in Turndown engine (`read_page`) | Varies | Raw DOM / accessibility tree | N/A |
+| **Multi-platform note clipping** | **16 destinations** in one toolset | Read-only | Read/Automate only | 1 destination |
+| **Concurrent multi-client sharing** | **Local Bridge Hub** (stdio + Streamable HTTP) | N/A | Often single-browser lock | Varies |
 
-### 如果你是使用者
-请先看：
+---
 
-- [`docs/install-and-usage.md`](docs/install-and-usage.md)
+## Quick Start (3 Steps)
 
-这份文档按步骤说明：
-- 如何安装 `smartclip-mcp`
-- 如何配置 `.mcp.json`
-- 如何安装 `smartclip-agent-extension`
-- 如何运行 doctor
-- 如何在 Claude Code / Gemini CLI / OpenCode / Cursor / Windsurf 中使用
+### 1. Enable MCP in the SmartClip Chrome Extension
 
-### 如果你是维护者 / 发布者
-请先看：
+1. Install the **SmartClip** Chrome extension from [smartclip.app](https://smartclip.app) and sign in (Pro subscription required for MCP service).
+2. Open **SmartClip → Options → General Settings** and enable **Enable MCP Service**.
 
-- [`RELEASE.md`](RELEASE.md)
-
-这份文档按步骤说明：
-- monorepo 结构
-- 本地构建方式
-- 发布前验证
-- 版本管理
-- npm 发布顺序
-- 发布后 smoke test
-
-## 面向用户的快速开始
-
-### Step 1：安装并配置 SmartClip Chrome 扩展
-
-你必须先：
-1. 安装 SmartClip 扩展
-2. 登录账号
-3. 确保是 Pro 用户
-4. 在扩展设置中打开 **Enable MCP Service / 开启 MCP 服务**
-
-### Step 2：安装 MCP server
+### 2. Configure Your AI Client
 
 ```bash
-npm install -g smartclip-mcp
+npx smartclip-mcp setup
 ```
 
-### Step 3：在项目目录配置 `.mcp.json`
+In interactive mode, `setup` detects installed client configs and lets you pick targets (pressing Enter writes the first item, `.mcp.json`; enter `a` or run `npx smartclip-mcp setup --client all` to write all 5 targets). It preserves other MCP servers while replacing any existing `smartclip` entry:
+- Project `.mcp.json`
+- Claude Code (`~/.claude.json`)
+- Cursor (`~/.cursor/mcp.json`)
+- Gemini CLI (`~/.gemini/settings.json`)
+- Windsurf (`~/.codeium/windsurf/mcp_config.json`)
+
+For **OpenCode** or manual **stdio** configuration:
 
 ```json
 {
@@ -73,151 +53,130 @@ npm install -g smartclip-mcp
 }
 ```
 
-### Step 4：安装 agent extension（推荐）
+> Streamable HTTP (`--transport http`) requires starting the Local Hub first (`npx -y smartclip-mcp daemon start`). `setup` emits client-specific HTTP fields (`type: "http"` + `url` for Claude Code / `.mcp.json`, `httpUrl` for Gemini CLI, `url` for Cursor / Windsurf).
+
+### 3. Restart Your Client & Verify Health
+
+Restart your AI client so it loads the new MCP configuration (or start the Hub manually with `npx -y smartclip-mcp daemon start`), then run:
+
+```bash
+npx -y smartclip-mcp doctor
+```
+
+---
+
+## Local Bridge Hub Architecture
+
+```text
+Claude Code (stdio) ──┐
+Gemini CLI  (stdio) ──┼──▶ smartclip-mcp Local Hub (127.0.0.1:18365) ◀──WS(/)──▶ SmartClip Chrome Extension
+Cursor / Windsurf  ───┘       ├─ /mcp    (Streamable HTTP)
+                              └─ /health (sub-second health probe)
+```
+
+- **Multi-client concurrency**: Run Claude Code, Cursor, and Gemini CLI at the same time sharing one extension connection; write/tab-switching actions are serialized automatically inside the Hub.
+- **Persistent browser link**: Restarting an AI session does not drop the Chrome extension WebSocket bridge.
+- **Standalone fallback**: Pass `--no-daemon` (or set `SMARTCLIP_MCP_NO_DAEMON=1`) to run in single-process mode inside restricted containers.
+
+---
+
+## 16 Supported Note-Taking Destinations
+
+Defined in `smartclip-bridge-protocol` (`destinationSchema`):
+
+| Category | Destinations |
+|---|---|
+| **Local & Knowledge Bases** | `obsidian` (Obsidian), `siyuan` (SiYuan / 思源笔记), `logseq` (Logseq), `joplin` (Joplin), `markdown` (Markdown download) |
+| **Cloud Workspaces & Docs** | `notion` (Notion), `feishu` (Feishu / 飞书), `yuque` (Yuque / 语雀), `wolai` (Wolai), `flowus` (FlowUs) |
+| **Quick Capture & Memos** | `flomo` (Flomo), `memos` (Memos), `getbiji` (GetBiji / Get笔记) |
+| **Object Storage Sync** | `s3_doc` (AWS S3), `aliyun_oss_doc` (Aliyun OSS / 阿里云 OSS), `tencent_cos_doc` (Tencent COS / 腾讯云 COS) |
+
+---
+
+## MCP Tools (9) & Native Prompts (4)
+
+| Tool | Purpose | Read-Only | Structured Output |
+|---|---|---|---|
+| `read_page` | Read current tab, `tabId`, or URL as Markdown (full text returned in `content[].text`) | Yes | `{ url, title, markdown, totalLength, truncated, warning, createdTabId }` |
+| `clip_page` | Extract a webpage and optionally save to a destination | No | `{ url, title, markdown, saved, destination, taskId, warning, createdTabId, clip }` |
+| `save_clip` | Save AI-synthesized Markdown/HTML summaries to a destination | No | `{ saved, destination, taskId, warning }` |
+| `list_tabs` | List open Chrome tabs | Yes | `{ tabs, count }` |
+| `get_daily_tasks` | View SmartClip daily clipping task pool | Yes | `{ tasks, count, lastSyncAt }` |
+| `clip_daily_task` | Process one daily task | No | `{ taskId, title, url, saved, clipTaskId, warning, markdown }` |
+| `clip_all_daily_tasks` | Batch-process all pending daily tasks | No | `{ summary, results }` |
+| `get_vocabulary` | Read user vocabulary list | Yes | `{ words, count, enabled }` |
+| `get_status` | Inspect MCP / extension health and Pro status | Yes | `{ status }` |
+
+Built-in MCP Prompts: `read-webpage`, `clip-webpage`, `process-daily-tasks`, `research-and-save`.
+
+---
+
+## Security & Diagnostics
+
+- **CSWSH Protection (Origin Check)**: WebSocket upgrades only accept browser extension origins (`chrome-extension://`, `moz-extension://`, `safari-web-extension://`) by default and reject webpage origins (`403`). Setting `SMARTCLIP_MCP_ALLOWED_ORIGINS` **overrides** (replaces) this default rule with an exact comma-separated allowlist—include every extension origin you use.
+- **Strict Session Token Auth**: Read from the environment of the process starting the Local Hub. When `SMARTCLIP_MCP_SESSION_TOKEN` is set, connections failing or timing out on the `hello` handshake are closed immediately without legacy fallback. Newer proxies auto-restart a running Hub on token/version mismatch; if removing a token or running `daemon start`, stop the old Hub first (`daemon stop`).
+- **Internal Hub Isolation**: `/bridge/invoke` and `/hub/shutdown` reject browser `Origin` headers and require the per-instance secret in `~/.smartclip/hub.json`.
+
+### Environment Variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `SMARTCLIP_MCP_SESSION_TOKEN` | unset | Shared token required during extension `hello` handshake |
+| `SMARTCLIP_MCP_ALLOWED_ORIGINS` | extension protocols | Comma-separated exact WebSocket Origin allowlist (overrides default) |
+| `SMARTCLIP_MCP_WS_BIND_HOST` | `127.0.0.1` | Hub / WebSocket bind host (use `0.0.0.0` in Docker/WSL) |
+| `SMARTCLIP_MCP_PORT` | `18365` | Hub / WebSocket listening port (same as `--port`) |
+| `SMARTCLIP_MCP_NO_DAEMON` | `0` | Set to `1` to disable the shared Hub and connect inline |
+| `SMARTCLIP_HOME` | `~/.smartclip` | State directory storing `hub.json` |
+
+```bash
+npx -y smartclip-mcp doctor                 # Check client configs, Local Hub & extension health
+npx -y smartclip-mcp --healthcheck --json   # Fast non-blocking health probe
+npx -y smartclip-mcp daemon status          # Inspect background Hub status
+npx -y smartclip-mcp daemon stop            # Stop Hub (required when clearing tokens or switching builds)
+```
+*(If installed globally via `npm install -g smartclip-mcp`, you can omit `npx -y`.)*
+
+---
+
+## Optional: Agent Skills (`smartclip-agent-extension`)
+
+`smartclip-mcp` already ships with MCP `instructions` and 4 native `Prompts`. If you also want `SKILL.md` workflow playbooks for Claude Code or Gemini CLI:
 
 ```bash
 npm install -g smartclip-agent-extension
-```
-
-### Step 5：安装 skills 到当前项目
-
-```bash
 smartclip-agent-extension
 ```
 
-安装时会提示选择：
-1. **安装范围**：全局（用户主目录）或项目（当前目录）
-2. **目标目录**：`.agents/skills`、`.claude/skills`、`.gemini/skills`
+---
 
-也可以使用命令行参数：
+## Frequently Asked Questions (FAQ)
 
-```bash
-# 全局安装（推荐）
-smartclip-agent-extension --global
+### How do I let Claude Code or Cursor read logged-in, paywalled, or internal webpages?
+Configure `smartclip-mcp` via `npx smartclip-mcp setup`, open the page in Chrome with the SmartClip extension enabled, and ask your agent to read it. It calls `read_page`, which extracts clean Markdown directly from your authenticated Chrome tab without running a separate headless browser.
 
-# 项目安装
-smartclip-agent-extension --project
+### Can multiple AI clients (e.g. Claude Code + Cursor) use SmartClip at the same time?
+Yes. `smartclip-mcp` starts a shared Local Bridge Hub on `127.0.0.1:18365` supporting both stdio proxy clients and Streamable HTTP (`http://127.0.0.1:18365/mcp`). Concurrent tab-reading and clipping requests are safely coordinated inside the Hub.
 
-# 全局安装到默认目录
-smartclip-agent-extension --global --default
+### What is the difference between `read_page`, `clip_page`, and `save_clip`?
+Use `read_page` when you only want the AI to read or summarize a page without saving anything; use `clip_page` with `destination` to clip a webpage directly to a note app; use `save_clip` to save AI-synthesized notes, translations, or multi-tab research summaries.
 
-# 项目安装到所有目录
-smartclip-agent-extension --project --all
+---
 
-# 指定目录
-smartclip-agent-extension --global --targets .agents/skills,.claude/skills
-```
+## Monorepo Packages & Development
 
-**全局安装路径**：
-- Mac/Linux: `~/.agents/skills`, `~/.claude/skills`, `~/.gemini/skills`
-- Windows: `%USERPROFILE%\.agents\skills` 等
-
-**项目安装路径**：
-- 当前目录下的 `.agents/skills`, `.claude/skills`, `.gemini/skills`
-
-### Step 6：运行诊断
-
-```bash
-smartclip-agent-doctor
-```
-
-通过后，重启 AI 客户端即可开始使用。
-
-## 当前限制
-
-- 当前实现是 **单客户端独占**。同一时刻只能有一个 AI 客户端实例实际使用 SmartClip MCP。
-- 如果一个 Claude Code / Gemini CLI / OpenCode 已经启动并占用了 `smartclip-mcp`，另一个客户端通常需要等前一个 `smartclip-mcp` 退出后才能正常接管。
-- 当前浏览器扩展只会连接固定地址 `ws://127.0.0.1:18365`，并且扩展内部只维护一条 MCP bridge 连接。
-- 因此，即使手动启动多个 `smartclip-mcp` 进程，或者假设它们绑定不同端口，也**不能实现多个 AI 客户端同时共享同一个 SmartClip 扩展连接**。
-- 如果你需要从另一个客户端接管，最简单的做法是先关闭当前正在使用 SmartClip MCP 的客户端，或结束它启动的 `smartclip-mcp` 进程，然后再在新的客户端里触发连接。
-
-## 常用能力
-
-| 能力 | 推荐工具 |
-|---|---|
-| 读取当前网页，不保存 | `clip_page`（不传 `destination`） |
-| 保存网页到 Obsidian / Notion | `clip_page` + `destination` |
-| 保存 AI 生成的总结 | `save_clip` |
-| 查看每日任务池 | `get_daily_tasks` |
-| 批量处理每日任务 | `clip_all_daily_tasks` |
-| 查看 MCP 健康状态 | `get_status` |
-
-## MCP 工具概览
-
-以下 8 个工具注册在 MCP 工具注册表中，直接暴露给 AI 客户端：
-
-| Tool | Description | Structured Output |
-|------|-------------|------------------|
-| `list_tabs` | List open Chrome tabs | `{ tabs, count }` |
-| `save_clip` | Save generated content to a destination | `{ saved, destination, taskId, warning }` |
-| `clip_page` | Read a page or save it to a destination | `{ url, title, markdown, saved, destination, taskId, warning, createdTabId }` |
-| `get_daily_tasks` | Read daily task pool | `{ tasks, count, lastSyncAt }` |
-| `clip_daily_task` | Process one daily task | `{ taskId, title, url, saved, clipTaskId, warning, markdown }` |
-| `clip_all_daily_tasks` | Process all pending daily tasks | `{ summary, results }` |
-| `get_vocabulary` | Read user vocabulary | `{ words, count, enabled }` |
-| `get_status` | Read MCP / extension health | `{ status }` |
-
-> `extract_page`、`convert_to_markdown`、`get_tasks` 是扩展内部 Bridge Action，由 `clip_page` 等工具在内部调用，不单独注册为 MCP 工具。
-
-## 安全与诊断
-
-### 可选 session token 认证
-
-可以在 `.mcp.json` 中配置：
-
-```json
-{
-  "mcpServers": {
-    "smartclip": {
-      "command": "npx",
-      "args": ["-y", "smartclip-mcp"],
-      "env": {
-        "SMARTCLIP_MCP_SESSION_TOKEN": "your-secret-token"
-      }
-    }
-  }
-}
-```
-
-配置后，扩展端必须使用同一个 token 完成握手。
-
-### doctor
-
-```bash
-smartclip-agent-doctor
-```
-
-doctor 会检查：
-- `.mcp.json` 是否配置 smartclip
-- `smartclip-mcp` 是否可执行（`--help`）
-- SmartClip 扩展连接是否健康（`--healthcheck`）
-- 打包的 skill 源文件是否完整
-- skills 是否已部署到 global + project 双 scope 的 agent 目录
-
-## 开发者常用命令
-
-在仓库根目录：
+| Package | Path | Purpose |
+|---|---|---|
+| `smartclip-bridge-protocol` | `packages/smartclip-bridge-protocol` | Shared bridge schemas, error codes, and action contracts |
+| `smartclip-mcp` | `packages/smartclip-mcp` | Local Bridge Hub, MCP Server (stdio & Streamable HTTP), unified CLI |
+| `smartclip-agent-extension` | `packages/smartclip-agent-extension` | Optional `SKILL.md` playbooks, hooks, and doctor CLI |
 
 ```bash
 pnpm install
 pnpm build
+pnpm test
 ```
 
-单包调试：
-
-```bash
-pnpm --filter smartclip-bridge-protocol build
-pnpm --filter smartclip-mcp build
-pnpm --filter smartclip-mcp test
-```
-
-发布相关请查看：
-- [`RELEASE.md`](RELEASE.md)
-
-## 更多说明
-
-- MCP server 详细说明：[`packages/smartclip-mcp/README.md`](packages/smartclip-mcp/README.md)
-- 中文说明：[`README.zh-CN.md`](README.zh-CN.md)
+See [`RELEASE.md`](RELEASE.md) for release instructions.
 
 ## License
 
