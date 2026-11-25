@@ -9,6 +9,11 @@ import { defineConfig } from 'vitest/config'
  * 不属于 vitest 范围。
  */
 export default defineConfig({
+  css: {
+    postcss: {
+      plugins: [],
+    },
+  },
   test: {
     include: ['packages/*/src/**/*.test.ts'],
   },

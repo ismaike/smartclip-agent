@@ -15,7 +15,19 @@
       "changelog-path": "CHANGELOG.md",
       "changelog-type": "default",
       "include-component-in-tag": true,
-      "include-v-in-tag": true
+      "include-v-in-tag": true,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "server.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "server.json",
+          "jsonpath": "$.packages[0].version"
+        }
+      ]
     },
     "packages/smartclip-agent-extension": {
       "component": "smartclip-agent-extension",
@@ -23,7 +35,14 @@
       "changelog-path": "CHANGELOG.md",
       "changelog-type": "default",
       "include-component-in-tag": true,
-      "include-v-in-tag": true
+      "include-v-in-tag": true,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "packages/smartclip-agent-extension/gemini-extension.json",
+          "jsonpath": "$.version"
+        }
+      ]
     }
   },
   "changelog-sections": [

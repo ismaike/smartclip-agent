@@ -2,7 +2,24 @@
   "name": "smartclip-bridge-protocol",
   "version": "1.6.0",
   "type": "module",
-  "description": "Shared bridge protocol contracts for SmartClip MCP and extension",
+  "description": "Shared WebSocket bridge protocol contracts, schemas, and error codes for SmartClip MCP and Chrome extension.",
+  "homepage": "https://smartclip.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ismaike/smartclip-agent",
+    "directory": "packages/smartclip-bridge-protocol"
+  },
+  "bugs": {
+    "url": "https://github.com/ismaike/smartclip-agent/issues"
+  },
+  "keywords": [
+    "smartclip",
+    "mcp",
+    "model-context-protocol",
+    "websocket-bridge",
+    "chrome-extension",
+    "zod"
+  ],
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,7 +27,7 @@
     "dist/**/*"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
     "test": "vitest run"
   },
   "dependencies": {
