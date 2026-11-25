@@ -1,27 +1,11 @@
 ---
 name: smartclip-read
-description: Use when the user wants to read, summarize, inspect, or analyze a webpage without saving it to their note-taking app.
+description: Read, summarize, or compare webpages via Chrome without saving.
 ---
 
-# Read Webpages with SmartClip
+# Read Webpages
 
-Use this skill when the goal is browser-assisted reading only.
-
-## Primary rule
-- Prefer `clip_page`.
-- Do **not** pass `destination` unless the user explicitly wants to save.
-- Do **not** chain `extract_page` -> `convert_to_markdown` for normal reading flows.
-
-## Common flows
-- Read a URL: `clip_page({ url: 'https://...' })`
-- Read current tab: `clip_page({})`
-- Read a background tab: `list_tabs` -> choose tab -> `clip_page({ tabId })`
-
-## When this skill is correct
-- Summaries
-- Research
-- Explaining page contents
-- Reading authenticated pages through the user’s browser session
-
-## If it fails
-If the tool reports the extension is not connected, switch to `smartclip-troubleshooting`.
+- Always use read-only `read_page`; never pass `destination` or call `save_clip` unless explicitly asked to save.
+- For background/multiple tabs: `list_tabs()` -> `read_page({ tabId })`, and cite title + URL in synthesis.
+- If `truncated` is true and deeper content is needed, retry `read_page` with a larger `maxLength`.
+- On hub/extension connection errors, switch to `smartclip-troubleshooting`.

@@ -29,7 +29,11 @@ function parseArgs() {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     
-    if (arg === '--help' || arg === '-h') {
+    if (i === 0 && arg === 'doctor') {
+      options.command = 'doctor';
+      options.doctorArgs = args.slice(1);
+      return options;
+    } else if (arg === '--help' || arg === '-h') {
       options.showHelp = true;
     } else if (arg === 'uninstall' || arg === 'remove') {
       options.command = 'uninstall';
@@ -76,6 +80,7 @@ SmartClip Agent Skills 管理工具
   install (默认)    安装 Skills
   uninstall         卸载 Skills
   upgrade           升级 Skills（覆盖安装）
+  doctor            运行诊断检查（等价于 smartclip-agent-doctor）
 
 安装选项:
   -g, --global      全局安装
@@ -85,16 +90,16 @@ SmartClip Agent Skills 管理工具
   -d, --default     安装到默认目录 (.agents/skills)
 
 卸载选项:
-  -g, --global      卸载全局 Skills
+  -g, --global      卸载全局 Skills（默认 scope）
   -p, --project     卸载项目 Skills
   -t, --targets     指定卸载目录
-  -a, --all         卸载所有
+  -a, --all         卸载当前 scope 下所有支持的目录
 
 升级选项:
-  -g, --global      升级全局 Skills
+  -g, --global      升级全局 Skills（默认 scope）
   -p, --project     升级项目 Skills
   -t, --targets     指定升级目录
-  -a, --all         升级所有
+  -a, --all         升级当前 scope 下所有支持的目录
 
 通用选项:
   -h, --help        显示帮助信息
@@ -103,20 +108,23 @@ SmartClip Agent Skills 管理工具
   # 交互式安装
   smartclip-agent-extension
   
-  # 全局安装
+  # 全局安装（默认仅写 ~/.agents/skills）
   smartclip-agent-extension --global
   
   # 项目安装到所有目录
   smartclip-agent-extension --project --all
   
-  # 卸载全局 Skills
+  # 卸载全局默认目录 (~/.agents/skills)
   smartclip-agent-extension uninstall --global
   
-  # 卸载所有
+  # 卸载全局所有 3 个支持目录
   smartclip-agent-extension uninstall --all
+
+  # 卸载当前项目所有 3 个支持目录
+  smartclip-agent-extension uninstall --project --all
   
-  # 升级全局 Skills
-  smartclip-agent-extension upgrade --global
+  # 升级全局所有 3 个支持目录
+  smartclip-agent-extension upgrade --global --all
 
 全局安装路径:
   Mac/Linux: ~/.agents/skills, ~/.claude/skills, ~/.gemini/skills
@@ -349,6 +357,12 @@ function uninstallSkills(targetDirs, scope) {
 
 async function main() {
   const options = parseArgs();
+
+  if (options.command === 'doctor') {
+    const { main: runDoctorCli } = require('./bin/doctor.js');
+    const code = await runDoctorCli(['node', 'doctor', ...(options.doctorArgs || [])]);
+    process.exit(code);
+  }
   
   if (options.showHelp) {
     showHelp();

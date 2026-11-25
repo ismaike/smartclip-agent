@@ -1,7 +1,7 @@
 description = "View and process daily clipping tasks from the task pool"
 prompt = """
 Use the SmartClip MCP daily task tools to handle this request.
-1. First call `get_daily_tasks` to show the user their pending tasks.
+1. First call `get_daily_tasks({ status: "pending" })` to show the user their pending tasks.
 2. If the user wants to process a specific task, use `clip_daily_task` with the taskId.
 3. If the user wants to process all tasks, use `clip_all_daily_tasks`.
 - Always confirm with the user before batch-processing all tasks.

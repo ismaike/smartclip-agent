@@ -32,18 +32,36 @@ async function defaultExec(command, args, options = {}) {
   })
 }
 
+function findConfiguredMcpLocations({ cwd, home }) {
+  const candidates = [
+    { label: '.mcp.json', file: path.join(cwd, '.mcp.json') },
+    { label: '~/.claude.json', file: path.join(home, '.claude.json') },
+    { label: '~/.cursor/mcp.json', file: path.join(home, '.cursor', 'mcp.json') },
+    { label: '~/.gemini/settings.json', file: path.join(home, '.gemini', 'settings.json') },
+    { label: '~/.codeium/windsurf/mcp_config.json', file: path.join(home, '.codeium', 'windsurf', 'mcp_config.json') },
+  ]
+
+  return candidates
+    .filter(({ file }) => {
+      const json = readJsonIfExists(file)
+      return Boolean(json?.mcpServers?.smartclip)
+    })
+    .map(c => c.label)
+}
+
 async function runDoctor({ cwd = process.cwd(), home = require('node:os').homedir(), checkHealth = true, execCommand = defaultExec } = {}) {
-  const rootMcp = path.join(cwd, '.mcp.json')
-  const mcpJson = readJsonIfExists(rootMcp)
-  const smartclipConfig = mcpJson?.mcpServers?.smartclip
+  const configuredLocations = findConfiguredMcpLocations({ cwd, home })
+  const smartclipConfig = configuredLocations.length > 0
 
   const skillsInstalled = SKILL_NAMES.every(skill => fs.existsSync(path.join(__dirname, '..', 'skills', skill, 'SKILL.md')))
 
   const checks = []
   checks.push({
     name: 'mcp-config',
-    ok: Boolean(smartclipConfig),
-    detail: smartclipConfig ? 'smartclip MCP entry found' : 'missing smartclip entry in .mcp.json',
+    ok: smartclipConfig,
+    detail: smartclipConfig
+      ? `smartclip MCP entry found in ${configuredLocations.join(', ')}`
+      : 'missing smartclip entry in .mcp.json or global client configs (run npx smartclip-mcp setup)',
   })
 
   let serverInstall

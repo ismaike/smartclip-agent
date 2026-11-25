@@ -1,14 +1,43 @@
 {
   "name": "smartclip-agent-extension",
   "version": "1.6.0",
-  "description": "SmartClip AI Agent Extension with MCP server, skills, and hooks for Gemini, Claude Code, and OpenCode.",
+  "description": "Optional agent skills, hooks, and diagnostic CLI for SmartClip MCP (Claude Code, Gemini CLI, OpenCode).",
+  "homepage": "https://smartclip.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ismaike/smartclip-agent",
+    "directory": "packages/smartclip-agent-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/ismaike/smartclip-agent/issues"
+  },
+  "keywords": [
+    "agent-skills",
+    "claude-code-skills",
+    "gemini-cli",
+    "opencode",
+    "mcp",
+    "smartclip",
+    "web-clipper",
+    "obsidian",
+    "notion"
+  ],
   "main": "install.js",
   "bin": {
     "smartclip-agent-extension": "install.js",
     "smartclip-agent-doctor": "bin/doctor.js"
   },
+  "files": [
+    "README.md",
+    "bin/**/*",
+    "commands/**/*",
+    "hooks/**/*",
+    "lib/**/*",
+    "skills/**/*",
+    "install.js",
+    "gemini-extension.json"
+  ],
   "scripts": {
-    "postinstall": "node install.js",
     "install-skills": "node install.js",
     "doctor": "node bin/doctor.js --json",
     "test": "node --test"

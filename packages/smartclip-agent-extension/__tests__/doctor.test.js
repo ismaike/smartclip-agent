@@ -91,3 +91,23 @@ test('formatSessionContext returns deployment message when skills-deployed fails
   assert.ok(output.includes('skill deployment'))
   assert.ok(output.includes('smartclip-agent-extension'))
 })
+
+test('runDoctor detects smartclip config in global client files like ~/.claude.json', async () => {
+  const cwd = makeTempDir()
+  const home = makeTempDir()
+  fs.writeFileSync(
+    path.join(home, '.claude.json'),
+    JSON.stringify({ mcpServers: { smartclip: { command: 'npx', args: ['-y', 'smartclip-mcp'] } } }, null, 2),
+  )
+
+  const result = await runDoctor({
+    cwd,
+    home,
+    checkHealth: false,
+    execCommand: async () => ({ ok: true, stdout: 'ok' }),
+  })
+
+  const configCheck = result.checks.find(c => c.name === 'mcp-config')
+  assert.equal(configCheck.ok, true)
+  assert.ok(configCheck.detail.includes('~/.claude.json'))
+})

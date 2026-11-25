@@ -1,21 +1,10 @@
 ---
 name: smartclip-daily
-description: Use when the user asks to view, review, process, or batch-clip their SmartClip daily task pool.
+description: View, triage, or clip SmartClip daily task pool items.
 ---
 
-# Process SmartClip Daily Tasks
+# SmartClip Daily Tasks
 
-Use this skill for the synced daily task queue.
-
-## Rules
-- Start with `get_daily_tasks`.
-- Before `clip_all_daily_tasks`, show pending tasks and confirm with the user.
-- Daily task tools save content automatically.
-
-## Common flows
-1. Inspect pending tasks: `get_daily_tasks({ status: 'pending' })`
-2. Clip one task: `clip_daily_task({ taskId })`
-3. Clip all pending tasks: `clip_all_daily_tasks()`
-
-## Important distinction
-Unlike read-only `clip_page`, daily task tools are operational workflows that persist content and update task state.
+- Start with `get_daily_tasks({ status: 'pending' })` and list `title`, `url`, and `taskId`.
+- Clip one item: `clip_daily_task({ taskId })`.
+- Batch clip: ask the user to confirm (and target `destination` if overriding) before calling `clip_all_daily_tasks()`, as daily task tools persist notes and mutate task state.
