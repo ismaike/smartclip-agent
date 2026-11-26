@@ -1,6 +1,6 @@
 {
   "name": "smartclip-agent-extension",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Optional agent skills, hooks, and diagnostic CLI for SmartClip MCP (Claude Code, Gemini CLI, OpenCode).",
   "homepage": "https://smartclip.app",
   "repository": {
