@@ -358,7 +358,4 @@ npm uninstall -g smartclip-mcp smartclip-agent-extension
 ## 进一步阅读
 
 - 安装与使用细节：[`docs/install-and-usage.md`](install-and-usage.md)
-- 构建与发布：[`RELEASE.md`](../RELEASE.md)
-- Bridge Action 契约设计：[`docs/adr/0001-bridge-action-contract.md`](adr/0001-bridge-action-contract.md)
-- Skills 安装拓扑设计：[`docs/adr/0002-skills-install-topology.md`](adr/0002-skills-install-topology.md)
 - MCP 工具列表：[`../README.md`](../README.md)

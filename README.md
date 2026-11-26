@@ -176,8 +176,6 @@ pnpm build
 pnpm test
 ```
 
-See [`RELEASE.md`](RELEASE.md) for release instructions.
-
 ## License
 
 [MIT License](LICENSE) © 2024 maike
