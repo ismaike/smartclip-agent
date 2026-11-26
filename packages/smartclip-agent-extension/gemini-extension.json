@@ -1,6 +1,6 @@
 {
   "name": "smartclip-agent-extension",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "SmartClip MCP and Skills for AI Agents.",
   "publisher": "smartclip",
   "engines": {

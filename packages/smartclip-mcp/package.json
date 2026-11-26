@@ -1,7 +1,7 @@
 {
   "name": "smartclip-mcp",
   "type": "module",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "mcpName": "app.smartclip/smartclip-mcp",
   "description": "Chrome Extension-powered MCP server that lets AI agents (Claude Code, Cursor, Gemini CLI, Windsurf) read logged-in webpages as Markdown and clip them to 16 note-taking apps.",
   "homepage": "https://smartclip.app",

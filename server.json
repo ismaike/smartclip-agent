@@ -3,7 +3,7 @@
   "name": "app.smartclip/smartclip-mcp",
   "title": "SmartClip MCP",
   "description": "Read logged-in Chrome tabs as Markdown and clip to 16 note apps via Local Bridge Hub.",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "websiteUrl": "https://smartclip.app",
   "repository": {
     "url": "https://github.com/ismaike/smartclip-agent",
@@ -13,7 +13,7 @@
     {
       "registryType": "npm",
       "identifier": "smartclip-mcp",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "transport": {
         "type": "stdio"
       },
